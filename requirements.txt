@@ -1,0 +1,4 @@
+pandas>=2.0          # 3.0.5 already installed; keep lower bound for docs
+pyarrow>=14.0        # required for pandas parquet read/write
+langdetect>=1.0.9    # 1.0.9 is the only release; unpinned avoids src build
+pytest>=8.0

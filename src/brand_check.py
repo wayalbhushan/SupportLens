@@ -1,4 +1,4 @@
-﻿"""
+"""
 src/brand_check.py
 ------------------
 Phase 0 â€” Step 4: Brand substance heuristic pre-tagging.
@@ -37,12 +37,7 @@ PROCESSED_DIR = Path("data/processed")
 SAMPLE_SEED = 42
 SAMPLE_N = 300
 
-CANDIDATE_BRANDS = [
-    "AppleSupport",
-    "SpotifyCares",
-    "AdobeCare",
-    "VerizonSupport",
-]
+from src.config import CANDIDATE_BRANDS
 
 # â”€â”€ Heuristic patterns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

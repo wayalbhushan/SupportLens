@@ -125,6 +125,7 @@ Extract severity in strict JSON format:"""
         raw_resp = self.client.generate(
             system_prompt=SYSTEM_PROMPT_PATH_B,
             user_prompt=user_prompt,
+            model="gemini-3.5-flash-lite",
             temperature=0.0,
         )
 

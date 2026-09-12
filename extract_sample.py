@@ -112,6 +112,11 @@ def main():
     print(f"[extract_sample] Language filter: dropped {non_english_count:,} non-English ({non_en_pct:.2f}%)")
     print(f"[extract_sample] English in-scope opening messages pool: {len(df_english):,}")
 
+    # Persist pool for fast, reproducible golden set sampling
+    pool_path = PROCESSED_DIR / "verizon_in_scope_pool.parquet"
+    df_english.to_parquet(pool_path, index=False)
+    print(f"[extract_sample] Saved in-scope pool -> {pool_path}")
+
     # 5. Draw 500-item Sample
     sample_df = df_english.sample(n=min(500, len(df_english)), random_state=42)
     print(f"[extract_sample] Sampled {len(sample_df)} tweets.")

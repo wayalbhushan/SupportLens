@@ -83,7 +83,8 @@ def run_evaluation():
     print(f"Loaded golden set: {len(golden_df)} items ({len(golden_df[golden_df['stratum']=='A'])} Stratum A, {len(golden_df[golden_df['stratum']=='B'])} Stratum B)\n")
 
     existing_records = {}
-    if PRED_CSV_PATH.exists():
+    is_fresh = "--fresh" in sys.argv
+    if PRED_CSV_PATH.exists() and not is_fresh:
         try:
             prev_df = pd.read_csv(PRED_CSV_PATH)
             for _, r in prev_df.iterrows():
@@ -91,6 +92,8 @@ def run_evaluation():
             print(f"Found {len(existing_records)} existing cached evaluation predictions.")
         except Exception as e:
             print(f"Note: Could not load previous predictions: {e}")
+    elif is_fresh:
+        print("Running fresh evaluation pass (--fresh flag detected)...")
 
     orchestrator = SupportLensOrchestrator()
     records = []
@@ -165,9 +168,11 @@ def run_evaluation():
         records.append(rec)
         existing_records[tid] = rec
 
+        print(f"  [{idx + 1}/200] Processed Tweet {tid:<10} | Intent: {pred_intent:<22} | Sev: {pred_sev:<17} | Esc: {str(pred_esc):<5}", flush=True)
+
         if (idx + 1) % 5 == 0 or (idx + 1) == len(golden_df):
             pd.DataFrame(records).to_csv(PRED_CSV_PATH, index=False)
-            print(f"  Processed & saved {idx + 1}/{len(golden_df)} items...")
+            print(f"  >>> Checkpoint saved: {len(records)}/{len(golden_df)} items...", flush=True)
 
     res_df = pd.DataFrame(records)
     PRED_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)

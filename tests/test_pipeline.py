@@ -437,3 +437,71 @@ class TestBaselinesAndLeakage:
         overlap = all_corpus_tids.intersection(golden_tids)
         assert len(overlap) == 0, f"RETRIEVAL LEAKAGE: {len(overlap)} golden IDs found in retrieval index!"
 
+
+class TestOrchestratorDecoupledLogic:
+    """Unit tests for the Decision 20 Decoupled Dual-Path Orchestrator OR-gate logic (no LLM required)."""
+
+    class MockPathA:
+        def __init__(self, intent: str):
+            self.intent = intent
+        def process_message(self, text: str, k: int = 5):
+            return {"intent": self.intent, "reply_draft": "test reply", "evidence_used": [], "reasoning": "test reasoning"}
+
+    class MockPathB:
+        def __init__(self, severity_label: str):
+            self.severity_label = severity_label
+        def extract_severity(self, text: str):
+            return {"severity_label": self.severity_label, "rationale": "test severity rationale"}
+
+    def test_severity_override_escalates_regardless_of_intent(self):
+        from src.agent_orchestrator import SupportLensOrchestrator
+        # intent is 'other' (which defaults to False), but severity is 'legal_regulatory'
+        orch = SupportLensOrchestrator(
+            path_a=self.MockPathA(intent="other"),
+            path_b=self.MockPathB(severity_label="legal_regulatory")
+        )
+        res = orch.process("some text", tweet_id="123")
+        assert res["escalate"] is True
+        assert res["severity_override_triggered"] is True
+        assert "legal_regulatory override detected" in res["escalation_reason"]
+
+    def test_default_intent_escalates_when_severity_is_none(self):
+        from src.agent_orchestrator import SupportLensOrchestrator
+        # intent is 'billing_dispute' (defaults to True), severity is 'none'
+        orch = SupportLensOrchestrator(
+            path_a=self.MockPathA(intent="billing_dispute"),
+            path_b=self.MockPathB(severity_label="none")
+        )
+        res = orch.process("some text", tweet_id="456")
+        assert res["escalate"] is True
+        assert res["severity_override_triggered"] is False
+        assert res["default_intent_escalation"] is True
+        assert "billing ledger access required" in res["escalation_reason"]
+
+    def test_neither_triggers_yields_false(self):
+        from src.agent_orchestrator import SupportLensOrchestrator
+        # intent is 'connectivity_issue' (defaults to False), severity is 'none'
+        orch = SupportLensOrchestrator(
+            path_a=self.MockPathA(intent="connectivity_issue"),
+            path_b=self.MockPathB(severity_label="none")
+        )
+        res = orch.process("some text", tweet_id="789")
+        assert res["escalate"] is False
+        assert res["severity_override_triggered"] is False
+        assert res["default_intent_escalation"] is False
+        assert "Auto-handled" in res["escalation_reason"]
+
+    def test_both_trigger_preserves_severity_reason(self):
+        from src.agent_orchestrator import SupportLensOrchestrator
+        # intent is 'account_access' (defaults to True) AND severity is 'physical_hazard'
+        orch = SupportLensOrchestrator(
+            path_a=self.MockPathA(intent="account_access"),
+            path_b=self.MockPathB(severity_label="physical_hazard")
+        )
+        res = orch.process("some text", tweet_id="999")
+        assert res["escalate"] is True
+        assert res["severity_override_triggered"] is True
+        # Deliverable 3 requirement: explicit severity trigger takes priority in escalation_reason
+        assert "physical_hazard override detected" in res["escalation_reason"]
+
+

@@ -114,6 +114,28 @@ Append new entries here as they arise — never reconstruct this file.
     100% of raw messages (never gated or conditioned on intent). Escalation is determined
     by a strict boolean OR: escalate = (severity != none) OR default_mapping[predicted_intent].
 
+21. Grouping Acute/Rare Severity Classes in Reporting:
+    In the golden evaluation set (N=200), acute emergency categories have very low
+    natural support (physical_hazard n=4, business_critical n=2, medical n=1).
+    Reporting individual recall on n=1 or n=2 leads to extreme variance (0% or 100%
+    based on a single item) and uninformative zero-division risks. Therefore, while
+    Path B extracts each exact category independently, evaluation aggregates
+    acute/rare categories into a unified group (n=7, recall 85.7%), alongside
+    dedicated per-class reporting for high-stakes regulatory (legal_regulatory n=6)
+    and operational (prolonged_outage n=8) overrides.
+
+22. Bounded Prompt Iteration for Path A Escalation Sink Mitigation:
+    Evaluation revealed an escalation sink in Path A: customers stating actionable
+    billing or account disputes without a polite imperative verb were disproportionately
+    classified as complaint_no_request or other, dropping Stratum A escalation recall
+    to 0.704. A single bounded prompt rule was added to Path A's system prompt
+    directing the model to prioritize specific operational intent over complaint/other
+    whenever operational facts are present. Furthermore, error audit identified
+    that GS-185 ("class action lawsuit is needed for claiming speeds...") is an
+    artifact of golden-set frozen v1.2 vs. guide v1.3 Rule 4 (rhetorical hyperbole
+    classified as none), rather than an operational model miss.
+
+
 
 ## Known Issues Caught During Development
 

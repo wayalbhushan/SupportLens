@@ -75,6 +75,8 @@ def clean_json_response(raw_text: str) -> Dict[str, Any]:
 
     return json.loads(text)
 
+_GEMINI_EXHAUSTED = False
+
 class LLMClient:
     """Unified client for Gemini and Groq with disk caching."""
 
@@ -106,7 +108,7 @@ class LLMClient:
         Generate completion with disk caching.
         Returns the raw string output from the LLM.
         """
-        global _LAST_CALL_TIME
+        global _LAST_CALL_TIME, _GEMINI_EXHAUSTED
         import time
 
         provider = provider or self.default_provider
@@ -114,9 +116,9 @@ class LLMClient:
         # Default model selection
         if not model:
             if provider == "gemini":
-                model = "gemini-3.5-flash-lite"
+                model = "gemini-3.7-flash"
             else:
-                model = "qwen/qwen3.6-27b"
+                model = "qwen/qwen3.8-27b"
 
         cache_key = get_cache_key(model, system_prompt, user_prompt, temperature)
         if cache_key in _CACHE:
@@ -134,60 +136,56 @@ class LLMClient:
                 self.gemini_client = genai.Client(api_key=self.gemini_key)
 
             full_prompt = f"{system_prompt}\n\nUser Input:\n{user_prompt}"
+            models_to_try = [model, "gemini-3.8-flash"] if model == "gemini-3.7-flash" else [model]
             
-            for attempt in range(6):
-                # Pacing to avoid hitting 15 RPM
-                now = time.time()
-                elapsed = now - _LAST_CALL_TIME
-                if elapsed < 2.5:
-                    time.sleep(2.5 - elapsed)
-                _LAST_CALL_TIME = time.time()
+            for m in models_to_try:
+                for attempt in range(4):
+                    now = time.time()
+                    elapsed = now - _LAST_CALL_TIME
+                    if elapsed < 2.0:
+                        time.sleep(2.0 - elapsed)
+                    _LAST_CALL_TIME = time.time()
 
-                try:
-                    response = self.gemini_client.models.generate_content(
-                        model=model,
-                        contents=full_prompt,
-                        config={"temperature": temperature},
-                    )
-                    raw_output = response.text
-                    break
-                except Exception as e:
-                    err_str = str(e)
-                    if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "503" in err_str:
-                        match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
-                        if not match:
-                            match = re.search(r"retry after (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
-                        if match:
-                            sleep_s = float(match.group(1)) + 2.0
-                        else:
-                            sleep_s = 10.0 + attempt * 4.0
-                        print(f"[llm_client] Rate limit / 503 ({err_str[:40]}...). Sleeping {sleep_s:.1f}s before retry {attempt+1}/6...")
-                        time.sleep(sleep_s)
-                    else:
-                        print(f"[llm_client] Gemini error: {err_str[:120]}")
+                    try:
+                        response = self.gemini_client.models.generate_content(
+                            model=m,
+                            contents=full_prompt,
+                            config={"temperature": temperature},
+                        )
+                        raw_output = response.text
                         break
+                    except Exception as e:
+                        err_str = str(e)
+                        if "503" in err_str or "high demand" in err_str:
+                            print(f"[llm_client] {m} 503 spike. Sleeping 3s before retry {attempt+1}/4...")
+                            time.sleep(3.0)
+                        else:
+                            print(f"[llm_client] {m} error: {err_str[:80]}")
+                            break
+                if raw_output is not None:
+                    break
 
-            # Fallback to Groq if Gemini failed and Groq is available
+            # Fallback to Groq if Gemini failed or circuit-breaker tripped
             if raw_output is None and self.groq_key:
-                print("[llm_client] Falling back to Groq for this message...")
                 try:
                     if not self.groq_client:
                         from groq import Groq
                         self.groq_client = Groq(api_key=self.groq_key)
                     completion = self.groq_client.chat.completions.create(
-                        model="qwen/qwen3.6-27b",
+                        model="qwen/qwen3.8-27b",
                         messages=[
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": user_prompt},
                         ],
                         temperature=temperature,
+                        max_tokens=800,
                     )
                     raw_output = completion.choices[0].message.content
                 except Exception as groq_err:
                     print(f"[llm_client] Groq fallback failed: {groq_err}")
 
             if raw_output is None:
-                raise RuntimeError("Failed to generate content after Gemini retries and Groq fallback.")
+                raise RuntimeError("Failed to generate content after Gemini and Groq.")
 
         elif provider == "groq":
             if not self.groq_client:

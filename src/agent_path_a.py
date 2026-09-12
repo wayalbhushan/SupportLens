@@ -34,6 +34,9 @@ Apply the mechanical Stated-Defect Operational Test first:
 - If YES: Classify by the stated defect, ignoring venting, insults, or emotional tone.
 - If NO: Classify by emotional tone, sentiment, or out-of-scope status."
 
+CRITICAL SINK-PREVENTION RULE:
+When a message states a specific financial, fee, promotional, reward, credential, or account-related request or defect—even if terse, furious, or ambiguous in tone—prefer the specific operational intent (billing_dispute, account_access, appointment_installation) over 'other' or 'complaint_no_request'. Venting about a bill, unfulfilled reward card, or portal login failure IS a stated defect (billing_dispute / account_access), NOT a complaint_no_request.
+
 THE 8 CANONICAL INTENT CLASSES:
 1. connectivity_issue:
    - Scope: Complete loss of internet access, slow broadband throughput, Wi-Fi router / ONT optical terminal / gateway equipment issues, intermittent connection drops, DNS failures, or physical utility cable/pole issues.

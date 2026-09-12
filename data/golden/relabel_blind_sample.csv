@@ -1,48 +1,48 @@
 relabel_id,tweet_id,text_clean,intent,escalate,severity_override,notes
-RL-01,1159903,"@VerizonSupport they say they aren't but they won't let us connect from our phone, desktop &amp; consoles",,,,
-RL-02,1081359,"@VerizonSupport Hi, Verizon, been on hold for support for 44:15 now, after being told to expect a 4 minute wait. Unacceptable wait times!",,,,
-RL-03,1312060,Waited 5 hours for a @115722 callback. When I answered the call it says transferring then hung up on me. Very angry.,,,,
-RL-04,2814688,"@VerizonSupport waiting for a new password IN THE MAIL is by far the dumbest fucking thing. Email exists, it is in fact 2017",,,,
-RL-05,2200315,This should say don't be fooled by SPECTRUM!! @115722 is the best!! I had both of them and Fios is the best https://t.co/7kUDRgkTzb,,,,
-RL-06,1506945,I made NO changes and my fios bill went up @115722 @VerizonSupport I need an explanation.,,,,
-RL-07,894006,@115725 your five star customer service gets a 0 star will never wait for a service tech EVER again #terribe,,,,
-RL-08,1012001,"@115722 your support page is a piece of garbage. I'm trying to fix a channel unavailable error, and it keeps asking me to login.",,,,
-RL-09,706604,Dear @115722 I'm not paying my damn bill to you actually offer the internet speed you advertise.,,,,
-RL-10,2423595,@115722 has HORRIBLE customer service. If I wasn’t forced to have you with my apartment complex I’d switch today.,,,,
-RL-11,2231542,@VerizonSupport I recently canceled my account and now can't get a copy of my last bill.  Can you help?,,,,
+RL-01,1159903,"@VerizonSupport they say they aren't but they won't let us connect from our phone, desktop &amp; consoles",connectivity_issue,False,,Cannot connect devices to network
+RL-02,1081359,"@VerizonSupport Hi, Verizon, been on hold for support for 44:15 now, after being told to expect a 4 minute wait. Unacceptable wait times!",complaint_no_request,False,,Venting about long hold times
+RL-03,1312060,Waited 5 hours for a @115722 callback. When I answered the call it says transferring then hung up on me. Very angry.,complaint_no_request,False,,Venting about dropped callback and hold time
+RL-04,2814688,"@VerizonSupport waiting for a new password IN THE MAIL is by far the dumbest fucking thing. Email exists, it is in fact 2017",account_access,True,,Password reset credential recovery
+RL-05,2200315,This should say don't be fooled by SPECTRUM!! @115722 is the best!! I had both of them and Fios is the best https://t.co/7kUDRgkTzb,praise_thanks,False,,Sincere praise comparing FiOS to Spectrum
+RL-06,1506945,I made NO changes and my fios bill went up @115722 @VerizonSupport I need an explanation.,billing_dispute,True,,Disputing unexpected bill increase
+RL-07,894006,@115725 your five star customer service gets a 0 star will never wait for a service tech EVER again #terribe,appointment_installation,True,,Technician dispatch wait failure
+RL-08,1012001,"@115722 your support page is a piece of garbage. I'm trying to fix a channel unavailable error, and it keeps asking me to login.",account_access,True,,Login blocker preventing technical troubleshooting (Rule 3)
+RL-09,706604,Dear @115722 I'm not paying my damn bill to you actually offer the internet speed you advertise.,connectivity_issue,False,,Stated defect is slow internet speed vs advertised
+RL-10,2423595,@115722 has HORRIBLE customer service. If I wasn’t forced to have you with my apartment complex I’d switch today.,complaint_no_request,False,,Venting about service with no stated technical defect
+RL-11,2231542,@VerizonSupport I recently canceled my account and now can't get a copy of my last bill.  Can you help?,billing_dispute,True,,Requesting final bill copy on closed account
 RL-12,246200,"*calls to schedule*
 
 ""Sorry, it's not available at your address""
 
 ""B-b-but online it says i can""
 
-@115722 thanks for blueballs https://t.co/b3x6tXasGj",,,,
-RL-13,1767168,@119000 I did call to switch to your internet service didn’t like the attitude from your rep so I’ll stick to @115722 #badservice,,,,
-RL-14,1351275,@VerizonSupport I’m trying to pay my bill but card is getting declined I am able to use my card elsewhere,,,,
-RL-15,2115164,"@comcastcares Good Afternoon,  I am inquiring for any special deals on the triple play.  My contract is up next month.  Right now, Verizon is offering a much better deal with the Triple Play at $79.99/month which includes a Multi-room DVR and Showtime for the full 2 year contract",,,,
-RL-16,359698,. @115725 kind of sucks. Expensive and slow. That's a bad combination,,,,
-RL-17,775643,1st day with @115722 and I already have problems,,,,
-RL-18,1981642,When you see a commercial for @115722 but they refuse to install in your building because you live in NYC n they ignore agreements,,,,
-RL-19,746217,@115725 @VerizonSupport Got a weird call with someone offering me $50 off my next bill.  Scam?,,,,
-RL-20,1022246,@VerizonSupport i'm being charged a bill even though i cancelled my account in august &amp; was repeatedly told there were no pending charges.,,,,
-RL-21,2515369,"@VerizonSupport I have been waiting for a call back for 3 hours.  Every time I call its an hour, but the call never comes - can get a temporary password to log in online because the number you have is wrong... HELP! Terrible service... very disappointed.",,,,
-RL-22,1799363,@VerizonSupport we have a fast connection but when I try to watch any streaming service it says there was a problem with the video. It's like the data pauses or something. It doesn't rebuffer it just fails https://t.co/FEBVUH65IV,,,,
-RL-23,62538,@115722 @VerizonSupport is there an outage in the 19446 area?,,,,
-RL-24,2615922,"Hey @115725- I emailed your customer service line with billing, setup, and connectivity issues four days ago and they won’t respond. Where you at?",,,,
-RL-25,2748694,Any insight into this @115725 @115722 ?!?!? Taken within 1 minute of each other  #fios #Verizon https://t.co/istQ9K9XaH,,,,
-RL-26,201072,@115725 You guys literally have the worst internet Ive ever use dinmy entire fucking life,,,,
+@115722 thanks for blueballs https://t.co/b3x6tXasGj",other,False,,Coverage availability inquiry (Near-Miss 2)
+RL-13,1767168,@119000 I did call to switch to your internet service didn’t like the attitude from your rep so I’ll stick to @115722 #badservice,praise_thanks,False,,Sticking with Verizon after competitor bad experience
+RL-14,1351275,@VerizonSupport I’m trying to pay my bill but card is getting declined I am able to use my card elsewhere,billing_dispute,True,,Payment declined when paying bill
+RL-15,2115164,"@comcastcares Good Afternoon,  I am inquiring for any special deals on the triple play.  My contract is up next month.  Right now, Verizon is offering a much better deal with the Triple Play at $79.99/month which includes a Multi-room DVR and Showtime for the full 2 year contract",other,False,,Competitor contract negotiation citing Verizon
+RL-16,359698,. @115725 kind of sucks. Expensive and slow. That's a bad combination,connectivity_issue,False,,Slow speed stated defect
+RL-17,775643,1st day with @115722 and I already have problems,complaint_no_request,False,,Generic frustration on day 1 with no stated defect
+RL-18,1981642,When you see a commercial for @115722 but they refuse to install in your building because you live in NYC n they ignore agreements,other,False,,Building installation dispute / unserviceable address
+RL-19,746217,@115725 @VerizonSupport Got a weird call with someone offering me $50 off my next bill.  Scam?,billing_dispute,True,,Discount offer / billing scam inquiry
+RL-20,1022246,@VerizonSupport i'm being charged a bill even though i cancelled my account in august &amp; was repeatedly told there were no pending charges.,billing_dispute,True,,Disputing charge after account cancellation
+RL-21,2515369,"@VerizonSupport I have been waiting for a call back for 3 hours.  Every time I call its an hour, but the call never comes - can get a temporary password to log in online because the number you have is wrong... HELP! Terrible service... very disappointed.",account_access,True,,Cannot get temporary password / login blocker (Rule 3)
+RL-22,1799363,@VerizonSupport we have a fast connection but when I try to watch any streaming service it says there was a problem with the video. It's like the data pauses or something. It doesn't rebuffer it just fails https://t.co/FEBVUH65IV,tv_content_access,False,,Video playback / streaming service failure
+RL-23,62538,@115722 @VerizonSupport is there an outage in the 19446 area?,connectivity_issue,False,,Area outage inquiry
+RL-24,2615922,"Hey @115725- I emailed your customer service line with billing, setup, and connectivity issues four days ago and they won’t respond. Where you at?",billing_dispute,True,,Multiple intents; earliest actionable intent is billing (Rule 4)
+RL-25,2748694,Any insight into this @115725 @115722 ?!?!? Taken within 1 minute of each other  #fios #Verizon https://t.co/istQ9K9XaH,connectivity_issue,False,,Speed test screenshot showing connectivity issue
+RL-26,201072,@115725 You guys literally have the worst internet Ive ever use dinmy entire fucking life,connectivity_issue,False,,Worst internet passes Stated-Defect Test
 RL-27,2586069,"@115725
-Reported this leaning pole two weeks ago https://t.co/U17oicujHt",,,,
-RL-28,2562538,@VerizonSupport my tv boxes are dead and the birds game is on. The phone computer system told me to call back tomorrow #comcast?,,,,
-RL-29,1468162,What the hell @VerizonSupport??? I never got a final bill from you and I don't have my account number what is this?!? For two phones?!? https://t.co/FsUuAIzaKx,,,,
-RL-30,265214,"@VerizonSupport u shut my phone off instead of my moms and u keep calling me when I dont pay the bill, she does, Im a broke college student",,,,
-RL-31,2951002,@115725 your rewards program was/is a scam. Took my money and won't send the product!,,,,
-RL-32,147692,@115722 locked out of my account on #blackfriday and no one is picking up the phone.  On hold for an hour. #verizonsucks.,,,,
-RL-33,795391,@115722 terrible phone service now for 3 months. tech was out and they say its a bad switch at station and no follow up or fixes,,,,
-RL-34,2584819,"@VerizonSupport, the My Fios app keeps crashing and the My Verizon webpage leads to nowhere. This means y’all got my bill covered this month, right? https://t.co/Zz7KuKKaBr",,,,
-RL-35,418324,@VerizonSupport HEEELP MY INTERNET AND TV ISN'T WORKING,,,,
-RL-36,542694,@115722 why do you guys charge to watch current seasons of tb shows? You make enough money don’t you?,,,,
-RL-37,1601760,@VerizonSupport after changing routers optical devices #gigabit #fios really pathetic.Down &gt; 30 times/hr  in the last 1 week Can u fix it 👎👎 https://t.co/JLzldZpqiN,,,,
-RL-38,2748718,@VerizonSupport my anut has been trying to call customer support for a few days now and she can't get through. She told me about it and she was wondering what was the problem? She has FIOS and she has some questions...,,,,
-RL-39,169106,"Don’t do this often, but gotta say that the @115725 tech that fixed the issues at my house today displayed the epitome of customer service.",,,,
-RL-40,1269907,@VerizonSupport you have a major issue on your desktop site. using chrome. have to clear cookies every damn time to sign in or infinite loop,,,,
+Reported this leaning pole two weeks ago https://t.co/U17oicujHt",connectivity_issue,True,hazard_safety,Physical hazard override (leaning pole)
+RL-28,2562538,@VerizonSupport my tv boxes are dead and the birds game is on. The phone computer system told me to call back tomorrow #comcast?,tv_content_access,False,,TV set top boxes dead
+RL-29,1468162,What the hell @VerizonSupport??? I never got a final bill from you and I don't have my account number what is this?!? For two phones?!? https://t.co/FsUuAIzaKx,other,False,,Residual wireless leak (Near-Miss 6)
+RL-30,265214,"@VerizonSupport u shut my phone off instead of my moms and u keep calling me when I dont pay the bill, she does, Im a broke college student",other,False,,Residual wireless leak (Near-Miss 6)
+RL-31,2951002,@115725 your rewards program was/is a scam. Took my money and won't send the product!,billing_dispute,True,,Rewards program monetary dispute
+RL-32,147692,@115722 locked out of my account on #blackfriday and no one is picking up the phone.  On hold for an hour. #verizonsucks.,account_access,True,,Locked out of account
+RL-33,795391,@115722 terrible phone service now for 3 months. tech was out and they say its a bad switch at station and no follow up or fixes,appointment_installation,True,,Unresolved tech dispatch / station switch failure
+RL-34,2584819,"@VerizonSupport, the My Fios app keeps crashing and the My Verizon webpage leads to nowhere. This means y’all got my bill covered this month, right? https://t.co/Zz7KuKKaBr",account_access,True,,My Fios app and My Verizon portal crash / access failure
+RL-35,418324,@VerizonSupport HEEELP MY INTERNET AND TV ISN'T WORKING,connectivity_issue,False,,Internet and TV both down; earliest actionable is internet (Rule 4)
+RL-36,542694,@115722 why do you guys charge to watch current seasons of tb shows? You make enough money don’t you?,complaint_no_request,False,,Venting about pricing model without specific disputed charge (Near-Miss 7)
+RL-37,1601760,@VerizonSupport after changing routers optical devices #gigabit #fios really pathetic.Down &gt; 30 times/hr  in the last 1 week Can u fix it 👎👎 https://t.co/JLzldZpqiN,connectivity_issue,False,,Frequent connection drops
+RL-38,2748718,@VerizonSupport my anut has been trying to call customer support for a few days now and she can't get through. She told me about it and she was wondering what was the problem? She has FIOS and she has some questions...,complaint_no_request,False,,Cannot reach customer support; no technical defect stated
+RL-39,169106,"Don’t do this often, but gotta say that the @115725 tech that fixed the issues at my house today displayed the epitome of customer service.",praise_thanks,False,,Sincere praise for technician
+RL-40,1269907,@VerizonSupport you have a major issue on your desktop site. using chrome. have to clear cookies every damn time to sign in or infinite loop,account_access,True,,Sign-in infinite loop on website

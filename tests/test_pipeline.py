@@ -348,8 +348,22 @@ class TestGoldenEvaluationSet:
 
         assert len(df_relabel) == 40, f"Expected 40 blind items, found {len(df_relabel)}"
         assert set(df_relabel["tweet_id"]).issubset(set(df_golden["tweet_id"])), "Relabel tweet_ids not in golden set"
-        # Verify labels are currently blank/blind
-        assert df_relabel["intent"].fillna("").eq("").all(), "Relabel sample must be blind"
+        # Verify relabel sample is completed and conforms to taxonomy
+        assert len(df_relabel) == 40, "Relabel sample must contain 40 items"
+        assert df_relabel["intent"].isna().sum() == 0, "Relabel sample must have no null intents"
+        assert df_relabel["escalate"].isna().sum() == 0, "Relabel sample must have no null escalations"
+        valid_intents = {
+            "connectivity_issue",
+            "tv_content_access",
+            "billing_dispute",
+            "account_access",
+            "appointment_installation",
+            "complaint_no_request",
+            "praise_thanks",
+            "other",
+        }
+        assert set(df_relabel["intent"]).issubset(valid_intents), "Invalid intents in relabel sample"
+        assert set(df_relabel["escalate"]).issubset({True, False})
 
 
 # -- 8. Baselines and Data Leakage Regression Tests (Phase 3) -----------------

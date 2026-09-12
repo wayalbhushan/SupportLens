@@ -100,13 +100,24 @@ def run_calibration():
         })
 
     print("\n" + "=" * 70)
-    print("CALIBRATION SUMMARY TABLE")
+    print("TARGETED PROBE: NON-AGENCY LAWYER / ATTORNEY RECALL CHECK")
     print("=" * 70)
-    for r in results:
-        flag = "🚨 OVERRIDE" if r["severity_label"] != "none" else "✅ NONE"
-        print(f"[{r['index']}] Tweet {r['tweet_id']:<10} | {flag:<12} ({r['severity_label']:<17}) | Text: {r['text'][:55]}...")
+    lawyer_probes = [
+        ("1534202", "@115722 better refund my last purchase or I will cancel service and contact my damn attorneys"),
+        ("2782312", "@VerizonSupport why do you make it so hard to contact you, live chat down, no email for customer service. You are sending me a bill that is in my name but not mine, next step will be lawyer. @106984"),
+        ("1750069", "I just got Fucked by @115722 and the call center was no help and screamed at me, and a technician lied. Any good lawyers?"),
+        ("903379", "I'm looking for a Probono lawyer to take on @107682 advertisement claims with a subscription you susbosed get free on demand which I#1"),
+        ("1016408", "@VerizonSupport I do not have enough internet speed to load a page. Is there a problem, because if this is throttling, you should lawyer up.")
+    ]
+    for tid, text in lawyer_probes:
+        res = agent_b.extract_severity(text)
+        sev = res.get("severity_label", "none")
+        flag = "🚨 OVERRIDE" if sev != "none" else "✅ NONE"
+        print(f"Probe Tweet {tid:<8} | {flag:<12} ({sev:<17}) | Text: {text[:55]}...")
+        print(f"  Rationale: {res.get('rationale')}")
 
     return results
 
 if __name__ == "__main__":
     run_calibration()
+

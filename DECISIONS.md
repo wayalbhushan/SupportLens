@@ -93,6 +93,27 @@ Append new entries here as they arise — never reconstruct this file.
     mandatory disclosure that the blended sample reflects targeted oversampling,
     not natural operational frequency.
 
+19. Affirmative Billing Actions Override Underlying Technical Defects (v1.3 Rule 3b):
+    Intra-annotator blind relabeling surfaced a boundary contradiction on item 706604
+    ("not paying my damn bill to you actually offer the internet speed you advertise"),
+    which flipped from billing_dispute to connectivity_issue under a naive stated-defect
+    reading. We formally resolved this in LABELING_GUIDE.md v1.3 by establishing Rule 3b:
+    when a customer states an explicit, affirmative billing action (payment withholding,
+    refusal to pay, refund demand, disputing billed charges) motivated by an underlying
+    technical issue, the message is classified as billing_dispute. Rationale: the primary
+    human support queue requires financial/account ledger access, which is an operational
+    blocker. Golden set labels remain frozen under v1.2; this boundary is logged as an
+    accepted taxonomy limitation for the 200 frozen rows.
+
+20. Decoupled Dual-Path Architecture for Severity Escalation (Phase 4 Spec):
+    Phase 3 Baseline 2 demonstrated a critical architectural flaw: folding severity
+    overrides into the intent classifier caused 0/2 recall on affirmative legal threats
+    because legal language was mapped to "other" (auto-handled) or masked by the technical
+    defect intent. For Phase 4, the agent must employ a strict dual-path pipeline:
+    Path A predicts intent independently; Path B extracts severity independently across
+    100% of raw messages (never gated or conditioned on intent). Escalation is determined
+    by a strict boolean OR: escalate = (severity != none) OR default_mapping[predicted_intent].
+
 
 ## Known Issues Caught During Development
 

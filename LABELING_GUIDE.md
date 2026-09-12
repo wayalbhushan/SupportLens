@@ -147,6 +147,8 @@ Technical / Service   Account / Financial     Venting / Criticism    Gratitude
 
 ## 4. Escalation Policy & Severity Override
 
+### 4. Escalation Policy & Severity Override
+
 ### Default Escalation Mapping
 | Intent Class | Default Policy | Default Escalation Reason |
 | :--- | :--- | :--- |
@@ -179,6 +181,7 @@ Regardless of the default intent mapping (even for `complaint_no_request` or `co
    - Total service disruption **explicitly stated as lasting $\ge 48$ hours** (e.g. *"Day 3 without internet"*, *"no wifi for 5 days"*).
 4. **Legal / Regulatory Escalation Threat:**
    - Formal declarations of filing with the **FCC**, **FTC**, State Public Utility Commission (**PUC**), Better Business Bureau (**BBB**), or retention of legal counsel / lawsuit.
+   - *Threat-Severity Grading (v1.3 Addendum):* Affirmative first-person intent to file/retain counsel against Verizon (*"I am filing with the FCC"*, *"#BBB #FTC #FILECOMPLAINTS"*, *"on the verge of getting an attorney"*) triggers immediate escalation. General industry commentary (*"The FCC is dismantling Net Neutrality"*) or third-person rhetorical hyperbole (*"a class action lawsuit is needed"*) do NOT trigger severity override unless an affirmative first-person complaint/legal action is declared.
 5. **Business-Critical Revenue Stoppage:**
    - Commercial / business customer stating ongoing downtime is actively halting business operations, POS card transactions, or payroll.
 
@@ -229,7 +232,9 @@ When a single message touches multiple areas, apply this exact 4-step sequence:
 
 1. **Severity Override Triggers (Safety / Hazard / Legal / Outage $\ge 48$h):** Always sets `escalate = True`.
 2. **Stated-Defect Priority (Actionable Issue > Venting):** If a customer vents emotional frustration and names a specific service defect (*"Your service is trash, my router has a red globe for 3 hours"*), classify by the defect (`connectivity_issue`), NOT the venting.
-3. **Authentication / Billing Blocker > Technical Issue:** If a customer cannot troubleshoot technical service because they are blocked by login or account locks (*"Can't log into My Verizon to reset my router"*), classify as `account_access`. Credential access is a hard prerequisite.
+3. **Authentication / Billing Blocker > Technical Issue:**
+   - **3a (Authentication Blocker):** If a customer cannot troubleshoot technical service because they are blocked by login or account locks (*"Can't log into My Verizon to reset my router"*), classify as `account_access`. Credential access is a hard prerequisite.
+   - **3b (Explicit Billing Action Overrides Underlying Defect - v1.3 Addendum):** If a customer states an explicit, affirmative billing action (withholding payment, refusing to pay bill until service is restored, demanding a refund/credit) tied to a technical defect (*"not paying my damn bill to you actually offer the internet speed you advertise"*, `[706604]`), classify as `billing_dispute`. The operational routing queue requires billing ledger access, which takes precedence over downstream technical troubleshooting.
 4. **Earliest Mentioned Actionable Intent:** If two distinct actionable technical issues appear in the same message (*"Router is red and DVR won't record"*), classify by the first mentioned actionable issue (`connectivity_issue`).
 
 ---
@@ -242,3 +247,4 @@ When a single message touches multiple areas, apply this exact 4-step sequence:
 | **v1.0** | 2026-09-12 | Initial draft: 7 intents + other, merged `connectivity_issue`, pre-filtered wireless, initial severity override list. |
 | **v1.1** | 2026-09-12 | Fixed 4 critical blockers: (1) resolved example-exclusion contradictions in `connectivity_issue`, `billing_dispute`, `account_access`; (2) added mechanical Stated-Defect Operational Test; (3) unified severity behavior (severity flips `escalate`, never changes intent label; fixed Near-Miss 3); (4) added explicit Residual Wireless rule (`other` + `out_of_scope=True`) and Stated-Content-Only Evidence Rule; (5) added `other` reply-quality evaluation exclusion. |
 | **v1.2** | 2026-09-12 | **Frozen for Golden Set Labelling.** Added mechanical operational rule for `praise_thanks`: if prior negative experience is stated/implied and prominent, classify by complaint content (`complaint_no_request`). Ready for 200-item labeling. |
+| **v1.3** | 2026-09-12 | Added Rule 3b (explicit billing action/payment withholding overrides underlying technical defect; resolves item `706604` relabel discrepancy) and Threat-Severity Grading clarifying affirmative first-person filing intent vs. rhetorical commentary (resolves `GS-185`/`GS-193` boundary). Golden set labels remain frozen under v1.2 per Decision 19. |

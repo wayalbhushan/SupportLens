@@ -284,27 +284,30 @@ class TestThreadRootLogic:
 # ── 8. Golden evaluation set verification ─────────────────────────────────────
 
 class TestGoldenEvaluationSet:
-    def test_golden_labeled_dataset_integrity(self):
+    def test_golden_file_exists_and_row_count(self):
         from pathlib import Path
         import pandas as pd
-
         path = Path("data/golden/golden_labeled.csv")
         assert path.exists(), "golden_labeled.csv does not exist"
-
         df = pd.read_csv(path)
         assert len(df) == 200, f"Expected 200 items, found {len(df)}"
 
-        # Stratum sizes
+    def test_stratum_sizes_and_disjointness(self):
+        from pathlib import Path
+        import pandas as pd
+        df = pd.read_csv(Path("data/golden/golden_labeled.csv"))
         assert (df["stratum"] == "A").sum() == 120, "Stratum A must have 120 items"
         assert (df["stratum"] == "B").sum() == 80, "Stratum B must have 80 items"
 
-        # Disjointness
         tids_a = set(df[df["stratum"] == "A"]["tweet_id"])
         tids_b = set(df[df["stratum"] == "B"]["tweet_id"])
         assert len(tids_a.intersection(tids_b)) == 0, "Stratum A and B must be disjoint"
         assert len(set(df["tweet_id"])) == 200, "Duplicate tweet IDs in golden set"
 
-        # Valid intents under LABELING_GUIDE v1.2
+    def test_taxonomy_conformity(self):
+        from pathlib import Path
+        import pandas as pd
+        df = pd.read_csv(Path("data/golden/golden_labeled.csv"))
         valid_intents = {
             "connectivity_issue",
             "tv_content_access",
@@ -313,14 +316,37 @@ class TestGoldenEvaluationSet:
             "appointment_installation",
             "complaint_no_request",
             "praise_thanks",
-            "other"
+            "other",
         }
-        assert set(df["intent"]).issubset(valid_intents), f"Invalid intents found: {set(df['intent']) - valid_intents}"
+        found_intents = set(df["intent"])
+        assert found_intents.issubset(valid_intents), f"Invalid intents found: {found_intents - valid_intents}"
 
-        # Escalation is boolean
+    def test_escalation_boolean_integrity(self):
+        from pathlib import Path
+        import pandas as pd
+        df = pd.read_csv(Path("data/golden/golden_labeled.csv"))
         assert df["escalate"].dtype == bool or set(df["escalate"]).issubset({True, False})
 
-        # No nulls in essential columns
-        assert df["sample_id"].isna().sum() == 0
-        assert df["text_clean"].isna().sum() == 0
-        assert df["intent"].isna().sum() == 0
+    def test_no_nulls_in_required_fields(self):
+        from pathlib import Path
+        import pandas as pd
+        df = pd.read_csv(Path("data/golden/golden_labeled.csv"))
+        assert df["sample_id"].isna().sum() == 0, "Nulls found in sample_id"
+        assert df["text_clean"].isna().sum() == 0, "Nulls found in text_clean"
+        assert df["intent"].isna().sum() == 0, "Nulls found in intent"
+        assert df["escalate"].isna().sum() == 0, "Nulls found in escalate"
+
+    def test_relabel_blind_sample_integrity(self):
+        from pathlib import Path
+        import pandas as pd
+        relabel_path = Path("data/golden/relabel_blind_sample.csv")
+        golden_path = Path("data/golden/golden_labeled.csv")
+
+        assert relabel_path.exists(), "relabel_blind_sample.csv does not exist"
+        df_relabel = pd.read_csv(relabel_path)
+        df_golden = pd.read_csv(golden_path)
+
+        assert len(df_relabel) == 40, f"Expected 40 blind items, found {len(df_relabel)}"
+        assert set(df_relabel["tweet_id"]).issubset(set(df_golden["tweet_id"])), "Relabel tweet_ids not in golden set"
+        # Verify labels are currently blank/blind
+        assert df_relabel["intent"].fillna("").eq("").all(), "Relabel sample must be blind"

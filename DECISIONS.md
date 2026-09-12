@@ -81,6 +81,17 @@ Append new entries here as they arise — never reconstruct this file.
     oversamples across rare intents and severity overrides; 67.5% escalation rate).
     Every single item is annotated with intent, boolean escalation decision,
     severity override trigger, and operational notes under guide v1.2.
+    Total labeling time spent: 3 hours 45 minutes in a single sustained session.
+
+18. Stratum A per-class metrics are unreliable below n=5 (specifically,
+    appointment_installation has n=1 in Stratum A). Top-line headline numbers
+    (overall intent accuracy, overall escalation precision/recall/F1) are reported
+    exclusively on Stratum A to preserve unbiased evaluation. However, for
+    per-class breakdowns, any class with n<5 in Stratum A is explicitly flagged
+    as "insufficient sample size for reliable natural estimate", and per-class
+    numbers for those classes are reported from the blended set (A+B) with a
+    mandatory disclosure that the blended sample reflects targeted oversampling,
+    not natural operational frequency.
 
 
 ## Known Issues Caught During Development

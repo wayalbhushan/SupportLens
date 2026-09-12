@@ -350,3 +350,57 @@ class TestGoldenEvaluationSet:
         assert set(df_relabel["tweet_id"]).issubset(set(df_golden["tweet_id"])), "Relabel tweet_ids not in golden set"
         # Verify labels are currently blank/blind
         assert df_relabel["intent"].fillna("").eq("").all(), "Relabel sample must be blind"
+
+
+# -- 8. Baselines and Data Leakage Regression Tests (Phase 3) -----------------
+
+class TestBaselinesAndLeakage:
+    """
+    Validation for Phase 3 baselines:
+      - Leakage Check (Decision 1): Assert zero golden-set tweet_ids appear
+        in the weak-label training pool.
+      - Keyword dictionary integrity: All 8 taxonomy classes defined.
+      - Deterministic escalation mapping integrity: matches Section 4.
+    """
+
+    def test_weak_label_pool_zero_golden_leakage(self):
+        from pathlib import Path
+        import pandas as pd
+        from src.baseline_simple import load_clean_pool_and_sample
+
+        weak_df, golden_df = load_clean_pool_and_sample(sample_size=2500, random_state=42)
+        golden_ids = set(golden_df["tweet_id"].astype(str))
+        
+        id_col = "root_tweet_id" if "root_tweet_id" in weak_df.columns else "tweet_id"
+        weak_ids = set(weak_df[id_col].astype(str))
+
+        overlap = weak_ids.intersection(golden_ids)
+        assert len(overlap) == 0, f"LEAKAGE: {len(overlap)} golden IDs found in weak-label pool!"
+        assert len(weak_df) == 2500, f"Expected 2,500 samples, got {len(weak_df)}"
+
+    def test_keyword_dict_contains_all_taxonomy_classes(self):
+        from src.keyword_dict import KEYWORD_DICT, PRIORITY_ORDER
+        expected_classes = {
+            "connectivity_issue",
+            "tv_content_access",
+            "billing_dispute",
+            "account_access",
+            "appointment_installation",
+            "complaint_no_request",
+            "praise_thanks",
+            "other",
+        }
+        assert set(KEYWORD_DICT.keys()) == expected_classes
+        assert set(PRIORITY_ORDER) == expected_classes
+        assert len(PRIORITY_ORDER) == 8
+
+    def test_deterministic_escalation_mapping_conformity(self):
+        from src.baseline_simple import ESCALATION_DEFAULT_MAPPING
+        assert ESCALATION_DEFAULT_MAPPING["billing_dispute"] is True
+        assert ESCALATION_DEFAULT_MAPPING["account_access"] is True
+        assert ESCALATION_DEFAULT_MAPPING["appointment_installation"] is True
+        assert ESCALATION_DEFAULT_MAPPING["connectivity_issue"] is False
+        assert ESCALATION_DEFAULT_MAPPING["tv_content_access"] is False
+        assert ESCALATION_DEFAULT_MAPPING["complaint_no_request"] is False
+        assert ESCALATION_DEFAULT_MAPPING["praise_thanks"] is False
+        assert ESCALATION_DEFAULT_MAPPING["other"] is False

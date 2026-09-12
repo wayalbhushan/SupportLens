@@ -125,6 +125,20 @@ Classify the intent and generate the grounded reply draft in JSON format:"""
 
         try:
             parsed = clean_json_response(raw_resp)
+            intent = str(parsed.get("intent", "other")).strip().lower()
+            valid_intents = {
+                "connectivity_issue",
+                "tv_content_access",
+                "billing_dispute",
+                "account_access",
+                "appointment_installation",
+                "complaint_no_request",
+                "praise_thanks",
+                "other",
+            }
+            if intent not in valid_intents:
+                intent = "other"
+            parsed["intent"] = intent
         except Exception as e:
             # Fallback if model output is malformed
             parsed = {

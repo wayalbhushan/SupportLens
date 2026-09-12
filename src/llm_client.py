@@ -48,9 +48,16 @@ def get_cache_key(model: str, system_prompt: str, user_prompt: str, temperature:
     content = f"{model}|{temperature}|{system_prompt}|{user_prompt}"
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
+import re
+
+_LAST_CALL_TIME = 0.0
+
 def clean_json_response(raw_text: str) -> Dict[str, Any]:
     """Extract and parse JSON from LLM output, handling markdown fences if present."""
     text = raw_text.strip()
+    # Strip <think> tags if model produces reasoning tokens
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
     # Strip markdown code blocks
     if text.startswith("```json"):
         text = text[7:]
@@ -99,20 +106,24 @@ class LLMClient:
         Generate completion with disk caching.
         Returns the raw string output from the LLM.
         """
+        global _LAST_CALL_TIME
+        import time
+
         provider = provider or self.default_provider
 
         # Default model selection
         if not model:
             if provider == "gemini":
-                model = "gemini-3.6-flash"
+                model = "gemini-3.5-flash-lite"
             else:
-                model = "llama-3.3-70b-versatile"
+                model = "qwen/qwen3.6-27b"
 
         cache_key = get_cache_key(model, system_prompt, user_prompt, temperature)
         if cache_key in _CACHE:
             return _CACHE[cache_key]
 
         # Call provider
+        raw_output = None
         if provider == "gemini":
             if not self.gemini_client:
                 if not self.gemini_key:
@@ -123,9 +134,15 @@ class LLMClient:
                 self.gemini_client = genai.Client(api_key=self.gemini_key)
 
             full_prompt = f"{system_prompt}\n\nUser Input:\n{user_prompt}"
-            import time
-            raw_output = None
+            
             for attempt in range(6):
+                # Pacing to avoid hitting 15 RPM
+                now = time.time()
+                elapsed = now - _LAST_CALL_TIME
+                if elapsed < 2.5:
+                    time.sleep(2.5 - elapsed)
+                _LAST_CALL_TIME = time.time()
+
                 try:
                     response = self.gemini_client.models.generate_content(
                         model=model,
@@ -136,14 +153,41 @@ class LLMClient:
                     break
                 except Exception as e:
                     err_str = str(e)
-                    if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                        sleep_s = 8 + attempt * 2
-                        print(f"[llm_client] Free-tier rate limit (429) encountered. Sleeping {sleep_s}s before retry {attempt+1}/6...")
+                    if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "503" in err_str:
+                        match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
+                        if not match:
+                            match = re.search(r"retry after (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
+                        if match:
+                            sleep_s = float(match.group(1)) + 2.0
+                        else:
+                            sleep_s = 10.0 + attempt * 4.0
+                        print(f"[llm_client] Rate limit / 503 ({err_str[:40]}...). Sleeping {sleep_s:.1f}s before retry {attempt+1}/6...")
                         time.sleep(sleep_s)
                     else:
-                        raise e
+                        print(f"[llm_client] Gemini error: {err_str[:120]}")
+                        break
+
+            # Fallback to Groq if Gemini failed and Groq is available
+            if raw_output is None and self.groq_key:
+                print("[llm_client] Falling back to Groq for this message...")
+                try:
+                    if not self.groq_client:
+                        from groq import Groq
+                        self.groq_client = Groq(api_key=self.groq_key)
+                    completion = self.groq_client.chat.completions.create(
+                        model="qwen/qwen3.6-27b",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        temperature=temperature,
+                    )
+                    raw_output = completion.choices[0].message.content
+                except Exception as groq_err:
+                    print(f"[llm_client] Groq fallback failed: {groq_err}")
+
             if raw_output is None:
-                raise RuntimeError("Failed to generate content after 6 rate-limit retries.")
+                raise RuntimeError("Failed to generate content after Gemini retries and Groq fallback.")
 
         elif provider == "groq":
             if not self.groq_client:

@@ -70,9 +70,9 @@ Append new entries here as they arise — never reconstruct this file.
     complete outages (>=48h), legal/regulatory filings (FCC/PUC), or business-critical
     stoppage.
 
-16. LABELING_GUIDE.md is formally frozen at v1.1 before golden set labelling
-    begins. All 200 items in the golden evaluation set are annotated under v1.1.
-    Any post-hoc adjustments will require an explicit v1.2 version bump, Git
+16. LABELING_GUIDE.md is formally frozen at v1.2 before golden set labelling
+    begins. All 200 items in the golden evaluation set are annotated under v1.2.
+    Any post-hoc adjustments will require an explicit v1.3 version bump, Git
     commit, and documentation of affected rows to safeguard annotation consistency.
 
 

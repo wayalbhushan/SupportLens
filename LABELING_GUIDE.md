@@ -1,6 +1,6 @@
 # SupportLens Labeling Guide
 
-> **Version:** 1.1  
+> **Version:** 1.2  
 > **Effective Date:** 2026-09-12  
 > **Domain Scope:** Verizon FiOS / Home Services (Broadband, TV, Home Phone) & Brand Reputation.  
 > **Upstream Exclusions:** Wireless-only products (cellular data, mobile handsets, SIMs, towers) are filtered out upstream prior to evaluation (measured 4.78% corpus drop).
@@ -126,6 +126,7 @@ Technical / Service   Account / Financial     Venting / Criticism    Gratitude
 - **Description:** Genuine positive feedback, praise for a technician or support agent, appreciation for service recovery, or general brand enthusiasm.
 - **Inclusions:** Sincere thank you notes, compliments on fast resolution, praising helpful staff.
 - **Exclusions:** **Sarcastic "thanks"** (e.g. "Thanks for ruining my Sunday with no internet" -> classify by defect: `connectivity_issue`).
+- **Operational Rule (Prior Negative Experience):** If the message states or implies a prior negative experience (delay, difficulty, past failure) alongside the thanks, and the negative experience is the more prominent element (*"finally got someone that helped me after 3 hours on hold, thanks!"*), classify by the complaint content instead (`complaint_no_request`).
 - **Default Action:** **Auto-handle (Acknowledge & Close)** (Polite sign-off, close thread).
 - **Real Examples:**
   - `[1347708]` *"@115725 has the best customer service hands down"*
@@ -239,4 +240,5 @@ When a single message touches multiple areas, apply this exact 4-step sequence:
 | :--- | :--- | :--- |
 | **v0.1** | 2026-09-09 | Initial stub. |
 | **v1.0** | 2026-09-12 | Initial draft: 7 intents + other, merged `connectivity_issue`, pre-filtered wireless, initial severity override list. |
-| **v1.1** | 2026-09-12 | **Frozen for Golden Set Labelling.** Fixed 4 critical blockers: (1) resolved example-exclusion contradictions in `connectivity_issue`, `billing_dispute`, `account_access`; (2) added mechanical Stated-Defect Operational Test; (3) unified severity behavior (severity flips `escalate`, never changes intent label; fixed Near-Miss 3); (4) added explicit Residual Wireless rule (`other` + `out_of_scope=True`) and Stated-Content-Only Evidence Rule; (5) added `other` reply-quality evaluation exclusion. |
+| **v1.1** | 2026-09-12 | Fixed 4 critical blockers: (1) resolved example-exclusion contradictions in `connectivity_issue`, `billing_dispute`, `account_access`; (2) added mechanical Stated-Defect Operational Test; (3) unified severity behavior (severity flips `escalate`, never changes intent label; fixed Near-Miss 3); (4) added explicit Residual Wireless rule (`other` + `out_of_scope=True`) and Stated-Content-Only Evidence Rule; (5) added `other` reply-quality evaluation exclusion. |
+| **v1.2** | 2026-09-12 | **Frozen for Golden Set Labelling.** Added mechanical operational rule for `praise_thanks`: if prior negative experience is stated/implied and prominent, classify by complaint content (`complaint_no_request`). Ready for 200-item labeling. |

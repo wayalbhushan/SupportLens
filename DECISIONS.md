@@ -75,6 +75,13 @@ Append new entries here as they arise — never reconstruct this file.
     Any post-hoc adjustments will require an explicit v1.3 version bump, Git
     commit, and documentation of affected rows to safeguard annotation consistency.
 
+17. Golden Evaluation Set (data/golden/golden_labeled.csv) contains exactly 200
+    curated items across two strata: Stratum A (120 pure random, unbiased headline
+    metric test set; 22.5% natural escalation rate) and Stratum B (80 targeted
+    oversamples across rare intents and severity overrides; 67.5% escalation rate).
+    Every single item is annotated with intent, boolean escalation decision,
+    severity override trigger, and operational notes under guide v1.2.
+
 
 ## Known Issues Caught During Development
 

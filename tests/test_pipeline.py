@@ -279,3 +279,48 @@ class TestThreadRootLogic:
         threads_df = build_threads(df)
         assert len(threads_df) == 2
         assert all(threads_df["tweet_count"] == 2)
+
+
+# ── 8. Golden evaluation set verification ─────────────────────────────────────
+
+class TestGoldenEvaluationSet:
+    def test_golden_labeled_dataset_integrity(self):
+        from pathlib import Path
+        import pandas as pd
+
+        path = Path("data/golden/golden_labeled.csv")
+        assert path.exists(), "golden_labeled.csv does not exist"
+
+        df = pd.read_csv(path)
+        assert len(df) == 200, f"Expected 200 items, found {len(df)}"
+
+        # Stratum sizes
+        assert (df["stratum"] == "A").sum() == 120, "Stratum A must have 120 items"
+        assert (df["stratum"] == "B").sum() == 80, "Stratum B must have 80 items"
+
+        # Disjointness
+        tids_a = set(df[df["stratum"] == "A"]["tweet_id"])
+        tids_b = set(df[df["stratum"] == "B"]["tweet_id"])
+        assert len(tids_a.intersection(tids_b)) == 0, "Stratum A and B must be disjoint"
+        assert len(set(df["tweet_id"])) == 200, "Duplicate tweet IDs in golden set"
+
+        # Valid intents under LABELING_GUIDE v1.2
+        valid_intents = {
+            "connectivity_issue",
+            "tv_content_access",
+            "billing_dispute",
+            "account_access",
+            "appointment_installation",
+            "complaint_no_request",
+            "praise_thanks",
+            "other"
+        }
+        assert set(df["intent"]).issubset(valid_intents), f"Invalid intents found: {set(df['intent']) - valid_intents}"
+
+        # Escalation is boolean
+        assert df["escalate"].dtype == bool or set(df["escalate"]).issubset({True, False})
+
+        # No nulls in essential columns
+        assert df["sample_id"].isna().sum() == 0
+        assert df["text_clean"].isna().sum() == 0
+        assert df["intent"].isna().sum() == 0

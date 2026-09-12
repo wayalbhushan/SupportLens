@@ -149,54 +149,74 @@ class LLMJudge:
 
     def __init__(self, model: Optional[str] = None):
         self.model = model or os.environ.get("GROQ_JUDGE_MODEL", "qwen/qwen3.8-27b")
-        self.groq_key = os.environ.get("GROQ_API_KEY")
-        self.groq_client = None
-
-        if self.groq_key:
+        raw_keys = os.environ.get("GROQ_API_KEYS", "") or os.environ.get("GROQ_API_KEY", "")
+        self.groq_keys = [k.strip() for k in raw_keys.split(",") if k.strip()]
+        self.key_index = 0
+        self.clients = {}
+        if self.groq_keys:
             from groq import Groq
-            self.groq_client = Groq(api_key=self.groq_key)
+            for k in self.groq_keys:
+                self.clients[k] = Groq(api_key=k, timeout=30.0)
+
+    def _get_current_client(self):
+        if not self.groq_keys:
+            raise ValueError("GROQ_API_KEYS (or GROQ_API_KEY) is not set in environment or .env file.")
+        k = self.groq_keys[self.key_index % len(self.groq_keys)]
+        if k not in self.clients:
+            from groq import Groq
+            self.clients[k] = Groq(api_key=k, timeout=30.0)
+        return k, self.clients[k]
+
+    def _rotate_key(self):
+        self.key_index = (self.key_index + 1) % len(self.groq_keys)
+        k = self.groq_keys[self.key_index]
+        print(f"[judge] Rotating to Groq key {self.key_index + 1}/{len(self.groq_keys)} ({k[:12]}...)", flush=True)
 
     def _call_judge_api(self, system_prompt: str, user_prompt: str) -> Dict[str, Any]:
-        """Call Groq API with disk caching and structured JSON parsing."""
+        """Call Groq API with disk caching, key pool rotation, and structured JSON parsing."""
         cache_key = get_judge_cache_key(self.model, system_prompt, user_prompt, temperature=0.0)
         if cache_key in _JUDGE_CACHE:
             raw_text = _JUDGE_CACHE[cache_key]
         else:
-            if not self.groq_client:
-                if not self.groq_key:
-                    raise ValueError("GROQ_API_KEY is not set in environment or .env file.")
-                from groq import Groq
-                self.groq_client = Groq(api_key=self.groq_key)
-
             raw_text = None
-            for attempt in range(5):
+            max_attempts = max(10, len(self.groq_keys) * 3)
+            for attempt in range(max_attempts):
+                key_str, client = self._get_current_client()
                 try:
-                    completion = self.groq_client.chat.completions.create(
+                    completion = client.chat.completions.create(
                         model=self.model,
                         messages=[
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": user_prompt},
                         ],
                         temperature=0.0,
-                        max_tokens=600,
+                        max_tokens=200,
+                        timeout=30.0,
                     )
                     raw_text = completion.choices[0].message.content
+                    time.sleep(0.3)  # Gentle pacing
+                    # Round-robin to next key for balanced throughput
+                    self.key_index = (self.key_index + 1) % len(self.groq_keys)
                     break
                 except Exception as e:
                     err_msg = str(e)
                     if "429" in err_msg or "rate_limit" in err_msg.lower() or "503" in err_msg:
-                        sleep_s = 2 ** attempt * 2
-                        print(f"[judge] Groq rate limit/server notice. Sleeping {sleep_s}s (attempt {attempt+1}/5)...")
-                        time.sleep(sleep_s)
+                        print(f"[judge] Key {self.key_index + 1} notice: rate limit. Rotating immediately...", flush=True)
+                        self._rotate_key()
+                        if (attempt + 1) % len(self.groq_keys) == 0:
+                            sleep_s = 10.0
+                            print(f"[judge] All keys cycled. Pausing {sleep_s}s before next cycle...", flush=True)
+                            time.sleep(sleep_s)
                     else:
-                        print(f"[judge] API error on attempt {attempt+1}: {e}")
-                        time.sleep(2.0)
+                        print(f"[judge] API error on key {self.key_index + 1}: {e}", flush=True)
+                        self._rotate_key()
+                        time.sleep(1.0)
 
             if raw_output_text := raw_text:
                 _JUDGE_CACHE[cache_key] = raw_output_text
                 _save_judge_cache()
             else:
-                raise RuntimeError(f"Failed to get completion from Groq model {self.model} after 5 attempts.")
+                raise RuntimeError(f"Failed to get completion from Groq model {self.model} after {max_attempts} attempts across {len(self.groq_keys)} keys.")
 
         # Parse JSON from response
         clean_text = raw_text.strip()

@@ -214,6 +214,22 @@ Append new entries here as they arise — never reconstruct this file.
       and lexical cutoff dynamics of natural language support evaluation.
     - **Final Freeze**: Revision 1 numbers are locked as the reported calibration statistics.
 
+27. Full Golden-Set Reply-Quality Evaluation and Headline Benchmarks (N=176):
+    The frozen Revision 1 rubric and Groq judge (`qwen/qwen3.8-27b`) were evaluated across the
+    complete golden evaluation set (N=200):
+    - **Evaluation Exclusion Strictness**: All 24 items where predicted intent was "other" were
+      excluded without invoking judge APIs, maintaining evaluation consistency.
+    - **Headline Scores (N=176 valid items)**:
+      * Groundedness: Mean 2.82 (Std 0.78, Median 3.0), with 79.5% scored >= 3 (12.5% Score 4).
+        Contextualized by stress-test calibration reliability of kappa_w = 0.252 (fair).
+      * Actionability: Mean 2.93 (Std 0.87, Median 3.0), with 69.3% scored >= 3 (29.0% Score 4).
+        Contextualized by stress-test calibration reliability of kappa_w = 0.637 (substantial).
+      * Brand Appropriateness: Mean 2.44 (Std 0.61, Median 2.0), with 39.8% scored >= 3 (5.1% Score 4).
+        Contextualized by stress-test calibration reliability of kappa_w = 0.273 (fair).
+    - **Infrastructure Scaling**: To manage Groq's daily token quotas without altering model weights,
+      an automated round-robin client pool was implemented rotating across 5 API keys with instant
+      failover upon rate-limit signals, completing all 528 dimension evaluations.
+
 
 
 

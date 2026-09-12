@@ -7,8 +7,10 @@ This file defines the scoring anchors for the pointwise LLM-as-judge evaluation 
 ## Groundedness
 1: Reply contradicts the retrieved evidence, or invents a specific policy, fact, discount, refund amount, or promise not present anywhere in the retrieved evidence.
 2: Reply is generic and could apply to almost any brand or situation; it neither draws on nor contradicts the retrieved evidence — it simply does not engage with the historical pattern shown.
-3: Reply's general direction or action matches the pattern in the retrieved evidence (e.g. asks for account details in DM when evidence shows the brand typically does this for similar issues), but omits or alters specific details present in the evidence.
-4: Reply's specific action or diagnostic step is directly traceable to a step or fact stated in the retrieved evidence (e.g. the same diagnostic sequence — checking router light color — that evidence shows the brand uses for similar issues).
+3: Reply's action matches the GENERAL PROCEDURE shown in evidence (e.g. asks for the same type of information, follows the same troubleshooting sequence), but does not repeat a specific checkable fact (number, URL, named policy, named timeframe) from evidence.
+4: Reply contains a SPECIFIC, CHECKABLE FACT (a phone number, URL, dollar figure, named policy, or named timeframe) that is directly copied or paraphrased from the retrieved evidence.
+
+*Note on Groundedness Boundaries*: Tone, phrasing, or empathetic language matching the brand's voice (e.g. matching greeting style or exclamations like 'Whoa!') does NOT by itself qualify for Score 3 or 4 here — that is scored under Brand Appropriateness instead.
 
 ---
 
@@ -23,5 +25,5 @@ This file defines the scoring anchors for the pointwise LLM-as-judge evaluation 
 ## Brand Appropriateness
 1: Reply's tone is inappropriate for a public brand support account — hostile or dismissive toward the customer, broken/robotic phrasing, or formality wildly mismatched to the brand's real voice (e.g. overly casual slang, or corporate press-release tone).
 2: Reply is understandable but noticeably off in length or tone compared to real Verizon replies (e.g. far longer than any real example, or curt to the point of seeming dismissive).
-3: Reply matches Verizon's typical short, polite, action-oriented register, but is missing small stylistic markers real agents use (e.g. an empathetic opener, or an implicit invitation to continue the conversation).
-4: Reply is indistinguishable in tone, length, and structure from genuine Verizon support replies — concise, polite acknowledgment plus a specific action, with an implicit invitation to continue.
+3: Reply matches Verizon's typical short, polite, action-oriented register, but is missing small stylistic markers real agents use (e.g. an empathetic opener, or an implicit invitation to continue the conversation). Formally correct but 'corporate-polite' replies belong at Score 3.
+4: Reply is indistinguishable in tone, length, and structure from genuine Verizon support replies. Real VerizonSupport replies are typically under ~25 words, favor casual empathy openers (e.g. 'Oh no', 'Yikes', 'Whoa!') over formal apology structures (e.g. 'We apologize for the inconvenience'), and avoid corporate vocabulary (e.g. 'exemplary', 'high-quality support you deserve'). Score 4 requires this register.

@@ -20,6 +20,7 @@ import hashlib
 import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -167,18 +168,35 @@ class LLMJudge:
                 from groq import Groq
                 self.groq_client = Groq(api_key=self.groq_key)
 
-            completion = self.groq_client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                temperature=0.0,
-                max_tokens=600,
-            )
-            raw_text = completion.choices[0].message.content
-            _JUDGE_CACHE[cache_key] = raw_text
-            _save_judge_cache()
+            raw_text = None
+            for attempt in range(5):
+                try:
+                    completion = self.groq_client.chat.completions.create(
+                        model=self.model,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        temperature=0.0,
+                        max_tokens=600,
+                    )
+                    raw_text = completion.choices[0].message.content
+                    break
+                except Exception as e:
+                    err_msg = str(e)
+                    if "429" in err_msg or "rate_limit" in err_msg.lower() or "503" in err_msg:
+                        sleep_s = 2 ** attempt * 2
+                        print(f"[judge] Groq rate limit/server notice. Sleeping {sleep_s}s (attempt {attempt+1}/5)...")
+                        time.sleep(sleep_s)
+                    else:
+                        print(f"[judge] API error on attempt {attempt+1}: {e}")
+                        time.sleep(2.0)
+
+            if raw_output_text := raw_text:
+                _JUDGE_CACHE[cache_key] = raw_output_text
+                _save_judge_cache()
+            else:
+                raise RuntimeError(f"Failed to get completion from Groq model {self.model} after 5 attempts.")
 
         # Parse JSON from response
         clean_text = raw_text.strip()

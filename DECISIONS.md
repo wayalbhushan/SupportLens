@@ -147,6 +147,23 @@ Append new entries here as they arise — never reconstruct this file.
     operational truth (removing the annotator rule violation while retaining the
     borderline statutory citation in GS-023).
 
+24. Reversal of Cross-System Calibration Sampling in Favor of Quality-Stratified Agent Output:
+    Initial guidance contemplated drawing the 60-item human/judge calibration sample
+    equally across Baseline 1, Baseline 2, and the Phase 4 Agent (20 items each).
+    However, audit revealed that Phase 3 baselines were implemented strictly as intent
+    and escalation classifiers (`text -> (intent, escalate)`) and do not draft replies.
+    Fabricating replies post-hoc would break calibration validity: scoring canned macros
+    tests template detection rather than reply quality, while retrieving raw top-1
+    historical brand replies creates circularity (scoring the ground truth as grounded).
+    Furthermore, reopening baseline architecture violates the Phase 3 freeze.
+    Instead, calibration validity requires spanning real quality variance, which the 176
+    valid agent replies naturally provide across retrieval similarity bands (high >=0.60,
+    medium 0.50-0.59, low <0.50), prediction correctness (correct intent vs. misclassification
+    answering the wrong question), escalation status, and all 7 non-other intent classes.
+    The 60-item calibration sample is drawn strictly from Phase 4 Agent output stratified
+    on these quality proxies (seed=42).
+
+
 
 
 

@@ -505,3 +505,49 @@ class TestOrchestratorDecoupledLogic:
         assert "physical_hazard override detected" in res["escalation_reason"]
 
 
+# -- 10. LLM Judge Pipeline Tests (Phase 5 Part 1) ----------------------------
+
+class TestJudgeScaffoldAndExclusion:
+    """Tests for Phase 5 Part 1 LLM-as-judge pipeline, rubric parsing, and exclusions."""
+
+    def test_rubric_file_exists_and_contains_three_dimensions(self):
+        from pathlib import Path
+        rubric_path = Path("rubric/judge_rubric.md")
+        assert rubric_path.exists(), "rubric/judge_rubric.md does not exist"
+        content = rubric_path.read_text(encoding="utf-8")
+        assert "## Groundedness" in content
+        assert "## Actionability" in content
+        assert "## Brand Appropriateness" in content
+
+    def test_load_rubric_dimension_parses_cleanly(self):
+        from src.judge import load_rubric_dimension
+        for dim in ["Groundedness", "Actionability", "Brand Appropriateness"]:
+            text = load_rubric_dimension(dim)
+            assert text.startswith(f"## {dim}")
+            assert "1:" in text and "2:" in text and "3:" in text and "4:" in text
+            assert "---" not in text
+
+    def test_judge_item_skips_when_predicted_intent_is_other(self):
+        from src.judge import judge_item
+        # Must return None without calling LLM API when intent is 'other'
+        result = judge_item(
+            message="Some customer message",
+            reply="Some draft reply",
+            evidence_texts=["Some evidence"],
+            predicted_intent="other",
+        )
+        assert result is None, "judge_item must return None when predicted_intent is 'other'"
+
+    def test_resolve_evidence_texts_with_corpus(self):
+        from src.judge import resolve_evidence_texts
+        # Test with a known tweet_id from corpus or empty list
+        empty_res = resolve_evidence_texts([])
+        assert empty_res == []
+        none_res = resolve_evidence_texts(None)
+        assert none_res == []
+        str_res = resolve_evidence_texts("['2447936', '363192']")
+        assert len(str_res) == 2
+        assert "Tweet 2447936" in str_res[0]
+
+
+

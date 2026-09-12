@@ -1,0 +1,213 @@
+# SupportLens — Phase 3 Baselines Evaluation Report
+
+**Date:** 2026-09-12  
+**Status:** Complete & Frozen before Phase 4 Agent Development  
+**Target Dataset:** `data/golden/golden_labeled.csv` (200 items: 120 Stratum A, 80 Stratum B)  
+
+---
+
+## 1. Executive Summary & Comparison
+
+| Metric | Baseline 1 (Trivial Keyword) | Baseline 2 (TF-IDF + LogReg) | Relative Delta |
+| :--- | :---: | :---: | :---: |
+| **Stratum A Intent Accuracy** | 48.3% | 47.5% | -0.8% |
+| **Stratum A Macro-F1** | 0.466 | 0.433 | -0.033 |
+| **Stratum A Escalation Precision** | 0.225 | 0.706 | +0.481 |
+| **Stratum A Escalation Recall** | 1.000 | 0.444 | -0.556 |
+| **Stratum A Escalation F1** | 0.367 | 0.545 | +0.178 |
+| | | | |
+| **Full Blended Intent Accuracy** | 58.0% | 52.5% | -5.5% |
+| **Full Blended Macro-F1** | 0.558 | 0.509 | -0.049 |
+| **Full Blended Escalation Precision** | 0.405 | 0.768 | +0.363 |
+| **Full Blended Escalation Recall** | 1.000 | 0.531 | -0.469 |
+| **Full Blended Escalation F1** | 0.577 | 0.628 | +0.051 |
+
+> [!NOTE]
+> **Key Takeaways & Cost-Asymmetry Observations:**
+> 1. **Intent Accuracy:** Baseline 1 achieves 48.3% on Stratum A (58.0% on blended), while Baseline 2 achieves 47.5% on Stratum A (52.5% on blended). TF-IDF + Logistic Regression trained on weak labels slightly underperforms rigid keyword matching on raw accuracy due to noise propagation from the keyword heuristic.
+> 2. **Escalation Trade-Off:** Baseline 1 predicts `escalate=True` unconditionally (100% recall, 22.5% precision on Stratum A). Baseline 2 applies the deterministic default policy to predicted intent: precision jumps from 22.5% to **70.6%**, eliminating almost 70% of unnecessary human escalations, but recall drops to **44.4%** due to missed intent classifications.
+> 3. **The Bar for Phase 4:** The Phase 4 LLM Agent must surpass **48.3% Stratum A accuracy** and **0.466 Macro-F1**, while achieving both high Escalation Recall (>85%) AND high Precision (>70%).
+
+---
+
+## 2. Baseline 1: Trivial Keyword Baseline
+
+### Method
+- **Algorithm:** Case-insensitive keyword matching from `src/keyword_dict.py` checked in fixed priority order: `account_access` → `appointment_installation` → `billing_dispute` → `tv_content_access` → `connectivity_issue` → `praise_thanks` → `complaint_no_request` → `other`. First match wins; unmatched messages predict `other`.
+- **Escalation Rule:** Always predicts `escalate=True` for every incoming message (deliberate floor).
+
+### Stratum A Breakdown (Unbiased Headline Set, n=120)
+
+| Intent Class | Precision | Recall | F1-Score | Support | Notes |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| `account_access` | 0.800 | 0.500 | 0.615 | 8 | OK |
+| `appointment_installation` | 0.143 | 1.000 | 0.250 | 1 | ⚠️ **n < 5** (unrepresentative per Decision 18) |
+| `billing_dispute` | 0.583 | 0.538 | 0.560 | 13 | OK |
+| `tv_content_access` | 0.818 | 0.409 | 0.545 | 22 | OK |
+| `connectivity_issue` | 0.667 | 0.529 | 0.590 | 34 | OK |
+| `praise_thanks` | 0.500 | 0.222 | 0.308 | 9 | OK |
+| `complaint_no_request` | 0.800 | 0.421 | 0.552 | 19 | OK |
+| `other` | 0.205 | 0.643 | 0.310 | 14 | OK |
+
+- **Overall Intent Accuracy:** 48.3%
+- **Macro-F1:** 0.466
+- **Escalation (P / R / F1):** 0.225 / 1.000 / 0.367
+
+#### Stratum A Confusion Matrix (Baseline 1)
+| True \ Pred | acc_acc | appt_inst | bill_disp | tv_cont | conn_iss | praise | complaint | other |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **acc_acc** |   4 |   0 |   2 |   0 |   1 |   0 |   0 |   1 |
+| **appt_inst** |   0 |   1 |   0 |   0 |   0 |   0 |   0 |   0 |
+| **bill_disp** |   0 |   1 |   7 |   0 |   1 |   0 |   0 |   4 |
+| **tv_cont** |   0 |   2 |   1 |   9 |   0 |   0 |   1 |   9 |
+| **conn_iss** |   1 |   3 |   0 |   1 |  18 |   0 |   0 |  11 |
+| **praise** |   0 |   0 |   0 |   0 |   3 |   2 |   1 |   3 |
+| **complaint** |   0 |   0 |   1 |   0 |   2 |   1 |   8 |   7 |
+| **other** |   0 |   0 |   1 |   1 |   2 |   1 |   0 |   9 |
+
+### Full Blended Golden Set Breakdown (N=200)
+
+| Intent Class | Precision | Recall | F1-Score | Support |
+| :--- | :---: | :---: | :---: | :---: |
+| `account_access` | 0.696 | 0.800 | 0.744 | 20 |
+| `appointment_installation` | 0.583 | 0.875 | 0.700 | 16 |
+| `billing_dispute` | 0.724 | 0.677 | 0.700 | 31 |
+| `tv_content_access` | 0.792 | 0.576 | 0.667 | 33 |
+| `connectivity_issue` | 0.692 | 0.519 | 0.593 | 52 |
+| `praise_thanks` | 0.500 | 0.154 | 0.235 | 13 |
+| `complaint_no_request` | 0.800 | 0.400 | 0.533 | 20 |
+| `other` | 0.191 | 0.600 | 0.290 | 15 |
+
+- **Overall Intent Accuracy:** 58.0%
+- **Macro-F1:** 0.558
+- **Escalation (P / R / F1):** 0.405 / 1.000 / 0.577
+
+#### Full Blended Confusion Matrix (Baseline 1)
+| True \ Pred | acc_acc | appt_inst | bill_disp | tv_cont | conn_iss | praise | complaint | other |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **acc_acc** |  16 |   0 |   2 |   0 |   1 |   0 |   0 |   1 |
+| **appt_inst** |   0 |  14 |   0 |   0 |   2 |   0 |   0 |   0 |
+| **bill_disp** |   0 |   1 |  21 |   1 |   1 |   0 |   0 |   7 |
+| **tv_cont** |   1 |   2 |   1 |  19 |   0 |   0 |   1 |   9 |
+| **conn_iss** |   6 |   4 |   3 |   1 |  27 |   0 |   0 |  11 |
+| **praise** |   0 |   2 |   0 |   2 |   3 |   2 |   1 |   3 |
+| **complaint** |   0 |   1 |   1 |   0 |   2 |   1 |   8 |   7 |
+| **other** |   0 |   0 |   1 |   1 |   3 |   1 |   0 |   9 |
+
+---
+
+## 3. Baseline 2: Simple Weak-Supervision Baseline
+
+### Method
+- **Training Pool:** 2,500 messages sampled from in-scope candidate pool (`random_state=42`) strictly excluding all 200 golden set items (asserted zero leakage).
+- **Weak-Labeling:** Same keyword dictionary and priority order used in Baseline 1.
+- **Architecture:** TF-IDF (5,000 max features, English stop words, 1-2 ngrams) + Multiclass Logistic Regression (`class_weight='balanced'`, `max_iter=1000`).
+- **Escalation Rule:** Deterministic mapping from model's predicted intent per Section 4 of `LABELING_GUIDE.md` v1.2 (`billing_dispute`, `account_access`, `appointment_installation` → True; others → False).
+
+### Weak-Label Set Class Distribution (n=2,500)
+
+| Intent Class | Weak Count | Proportion | Warning Status |
+| :--- | :---: | :---: | :--- |
+| `account_access` | 61 | 2.4% | ✅ ≥ 50 examples |
+| `appointment_installation` | 108 | 4.3% | ✅ ≥ 50 examples |
+| `billing_dispute` | 234 | 9.4% | ✅ ≥ 50 examples |
+| `tv_content_access` | 261 | 10.4% | ✅ ≥ 50 examples |
+| `connectivity_issue` | 579 | 23.2% | ✅ ≥ 50 examples |
+| `praise_thanks` | 81 | 3.2% | ✅ ≥ 50 examples |
+| `complaint_no_request` | 287 | 11.5% | ✅ ≥ 50 examples |
+| `other` | 889 | 35.6% | ✅ ≥ 50 examples |
+
+### Validation Split Metrics (80/20 Train/Val Split, n=500)
+
+- **Val Intent Accuracy:** 75.0%
+- **Val Macro-F1:** 0.693
+
+| Intent Class | Val Precision | Val Recall | Val F1-Score | Support |
+| :--- | :---: | :---: | :---: | :---: |
+| `account_access` | 0.316 | 0.500 | 0.387 | 12 |
+| `appointment_installation` | 0.857 | 0.818 | 0.837 | 22 |
+| `billing_dispute` | 0.513 | 0.426 | 0.465 | 47 |
+| `tv_content_access` | 0.776 | 0.865 | 0.818 | 52 |
+| `connectivity_issue` | 0.922 | 0.810 | 0.862 | 116 |
+| `praise_thanks` | 0.733 | 0.688 | 0.710 | 16 |
+| `complaint_no_request` | 0.646 | 0.737 | 0.689 | 57 |
+| `other` | 0.768 | 0.781 | 0.774 | 178 |
+
+#### Validation Confusion Matrix (Baseline 2)
+| True \ Pred | acc_acc | appt_inst | bill_disp | tv_cont | conn_iss | praise | complaint | other |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **acc_acc** |   6 |   0 |   0 |   1 |   2 |   0 |   1 |   2 |
+| **appt_inst** |   0 |  18 |   0 |   0 |   1 |   0 |   2 |   1 |
+| **bill_disp** |   1 |   0 |  20 |   2 |   2 |   1 |   9 |  12 |
+| **tv_cont** |   0 |   1 |   2 |  45 |   1 |   0 |   1 |   2 |
+| **conn_iss** |   2 |   0 |   0 |   2 |  94 |   3 |   2 |  13 |
+| **praise** |   0 |   1 |   0 |   1 |   0 |  11 |   0 |   3 |
+| **complaint** |   2 |   0 |   1 |   1 |   2 |   0 |  42 |   9 |
+| **other** |   8 |   1 |  16 |   6 |   0 |   0 |   8 | 139 |
+
+### Stratum A Breakdown (Unbiased Headline Set, n=120)
+
+| Intent Class | Precision | Recall | F1-Score | Support | Notes |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| `account_access` | 1.000 | 0.375 | 0.545 | 8 | OK |
+| `appointment_installation` | 0.167 | 1.000 | 0.286 | 1 | ⚠️ **n < 5** (unrepresentative per Decision 18) |
+| `billing_dispute` | 0.375 | 0.231 | 0.286 | 13 | OK |
+| `tv_content_access` | 0.867 | 0.591 | 0.703 | 22 | OK |
+| `connectivity_issue` | 0.696 | 0.471 | 0.561 | 34 | OK |
+| `praise_thanks` | 0.333 | 0.111 | 0.167 | 9 | OK |
+| `complaint_no_request` | 0.667 | 0.526 | 0.588 | 19 | OK |
+| `other` | 0.213 | 0.714 | 0.328 | 14 | OK |
+
+- **Overall Intent Accuracy:** 47.5%
+- **Macro-F1:** 0.433
+- **Escalation (P / R / F1):** 0.706 / 0.444 / 0.545
+
+#### Stratum A Confusion Matrix (Baseline 2)
+| True \ Pred | acc_acc | appt_inst | bill_disp | tv_cont | conn_iss | praise | complaint | other |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **acc_acc** |   3 |   0 |   2 |   0 |   0 |   0 |   0 |   3 |
+| **appt_inst** |   0 |   1 |   0 |   0 |   0 |   0 |   0 |   0 |
+| **bill_disp** |   0 |   1 |   3 |   0 |   1 |   0 |   1 |   7 |
+| **tv_cont** |   0 |   1 |   2 |  13 |   0 |   0 |   0 |   6 |
+| **conn_iss** |   0 |   3 |   0 |   1 |  16 |   0 |   1 |  13 |
+| **praise** |   0 |   0 |   0 |   0 |   3 |   1 |   3 |   2 |
+| **complaint** |   0 |   0 |   0 |   0 |   2 |   1 |  10 |   6 |
+| **other** |   0 |   0 |   1 |   1 |   1 |   1 |   0 |  10 |
+
+### Full Blended Golden Set Breakdown (N=200)
+
+| Intent Class | Precision | Recall | F1-Score | Support |
+| :--- | :---: | :---: | :---: | :---: |
+| `account_access` | 0.812 | 0.650 | 0.722 | 20 |
+| `appointment_installation` | 0.571 | 0.750 | 0.649 | 16 |
+| `billing_dispute` | 0.632 | 0.387 | 0.480 | 31 |
+| `tv_content_access` | 0.840 | 0.636 | 0.724 | 33 |
+| `connectivity_issue` | 0.758 | 0.481 | 0.588 | 52 |
+| `praise_thanks` | 0.167 | 0.077 | 0.105 | 13 |
+| `complaint_no_request` | 0.526 | 0.500 | 0.513 | 20 |
+| `other` | 0.180 | 0.733 | 0.289 | 15 |
+
+- **Overall Intent Accuracy:** 52.5%
+- **Macro-F1:** 0.509
+- **Escalation (P / R / F1):** 0.768 / 0.531 / 0.628
+
+#### Full Blended Confusion Matrix (Baseline 2)
+| True \ Pred | acc_acc | appt_inst | bill_disp | tv_cont | conn_iss | praise | complaint | other |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **acc_acc** |  13 |   0 |   2 |   0 |   0 |   0 |   1 |   4 |
+| **appt_inst** |   0 |  12 |   0 |   0 |   0 |   1 |   0 |   3 |
+| **bill_disp** |   1 |   1 |  12 |   1 |   2 |   0 |   3 |  11 |
+| **tv_cont** |   0 |   1 |   2 |  21 |   0 |   1 |   0 |   8 |
+| **conn_iss** |   2 |   4 |   1 |   1 |  25 |   1 |   2 |  16 |
+| **praise** |   0 |   2 |   1 |   1 |   3 |   1 |   3 |   2 |
+| **complaint** |   0 |   1 |   0 |   0 |   2 |   1 |  10 |   6 |
+| **other** |   0 |   0 |   1 |   1 |   1 |   1 |   0 |  11 |
+
+---
+
+## 4. Verification & Integrity Checklist
+
+1. **Data Leakage Check (Decision 1):** Verified by `test_weak_label_pool_zero_golden_leakage`. 0 / 200 golden tweet_ids exist in the weak-label training pool.
+2. **Taxonomy Coverage:** All 8 taxonomy classes evaluated.
+3. **Small Sample Warnings (Decision 18):** `appointment_installation` in Stratum A has $n=1$ and is flagged as unrepresentative.
+4. **Escalation Policy:** Grounded strictly in Section 4 deterministic default mapping.

@@ -46,16 +46,13 @@ def _is_brand_account(author_id: str) -> bool:
     return not str(author_id).isdigit()
 
 
-def is_broadcast_root(row: pd.Series) -> bool:
+def is_broadcast_node(row: pd.Series) -> bool:
     """
-    Return True if this tweet should be excluded as a broadcast root.
+    Return True if this tweet should be excluded as a broadcast node.
 
-    Criteria (both must hold):
-      - Authored by a brand account (non-numeric author_id)
+    Criteria:
       - response_tweet_id list has > BROADCAST_THRESHOLD entries
     """
-    if not _is_brand_account(str(row["author_id"])):
-        return False
     return len(row["response_tweet_id"]) > BROADCAST_THRESHOLD
 
 
@@ -82,7 +79,7 @@ def build_threads(df: pd.DataFrame) -> pd.DataFrame:
     # Maps for fast lookup
     id_to_author: Dict[str, str] = {}
     id_to_created: Dict[str, pd.Timestamp] = {}
-    broadcast_root_ids: Set[str] = set()
+    broadcast_node_ids: Set[str] = set()
     children_of: Dict[str, List[str]] = defaultdict(list)
     all_tweet_ids: Set[str] = set()
 
@@ -93,9 +90,11 @@ def build_threads(df: pd.DataFrame) -> pd.DataFrame:
         id_to_created[tid] = created
         all_tweet_ids.add(tid)
 
-        # Broadcast check
-        if _is_brand_account(author) and len(resp_list) > BROADCAST_THRESHOLD:
-            broadcast_root_ids.add(tid)
+        # Broadcast check: apply per-node, not just at the root/brand level.
+        # Any tweet with high fan-out (e.g. a canned response quoted by many,
+        # or a CEO broadcast) should cut the thread.
+        if len(resp_list) > BROADCAST_THRESHOLD:
+            broadcast_node_ids.add(tid)
 
     # Build parentâ†’children adjacency (for BFS from roots)
     replied_to_ids: Set[str] = set()
@@ -104,7 +103,7 @@ def build_threads(df: pd.DataFrame) -> pd.DataFrame:
             children_of[parent_id].append(tid)
             replied_to_ids.add(parent_id)
 
-    print(f"[threads] Broadcast roots excluded: {len(broadcast_root_ids):,}")
+    print(f"[threads] Broadcast nodes excluded: {len(broadcast_node_ids):,}")
 
     # Root tweets: a tweet is a root if ALL its in_response_to_tweet_id entries
     # point to tweet IDs that do NOT exist in our dataset (i.e. it has no known
@@ -116,7 +115,7 @@ def build_threads(df: pd.DataFrame) -> pd.DataFrame:
     # LEAF nodes (tweets nobody replied to), not root nodes.
     root_candidates: Set[str] = set()
     for tid, in_resp_list in zip(tweet_ids_col, in_resp_ids_col):
-        if tid in broadcast_root_ids:
+        if tid in broadcast_node_ids:
             continue
         # Root = no parent OR no parent exists in our dataset
         has_known_parent = any(p in all_tweet_ids for p in in_resp_list)
@@ -140,7 +139,7 @@ def build_threads(df: pd.DataFrame) -> pd.DataFrame:
 
         while queue:
             current = queue.popleft()
-            if current in visited_global or current in broadcast_root_ids:
+            if current in visited_global or current in broadcast_node_ids:
                 continue
             visited_global.add(current)
             thread_tweet_ids.append(current)
@@ -185,7 +184,7 @@ def build_threads(df: pd.DataFrame) -> pd.DataFrame:
     # â”€â”€ Stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     print("\n[threads] â”€â”€ Thread Statistics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€")
     print(f"  Total threads reconstructed : {len(threads_df):,}")
-    print(f"  Broadcast roots excluded    : {len(broadcast_root_ids):,}")
+    print(f"  Broadcast nodes excluded    : {len(broadcast_node_ids):,}")
     if len(threads_df) > 0:
         avg_len = threads_df["tweet_count"].mean()
         max_len = threads_df["tweet_count"].max()

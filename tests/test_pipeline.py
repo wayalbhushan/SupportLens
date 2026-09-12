@@ -17,7 +17,7 @@ import pytest
 
 from src.ingest import _parse_id_list, INBOUND_MAP
 from src.clean import strip_signoffs
-from src.threads import is_broadcast_root
+from src.threads import is_broadcast_node
 
 
 # ── 1. Multi-id splitting ─────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ class TestInboundBoolParsing:
 # ── 3. Broadcast-root exclusion ───────────────────────────────────────────────
 
 def _make_row(author_id: str, response_ids: list) -> pd.Series:
-    """Helper to construct a minimal row Series for is_broadcast_root."""
+    """Helper to construct a minimal row Series for is_broadcast_node."""
     return pd.Series(
         {
             "author_id": author_id,
@@ -100,13 +100,13 @@ def _make_row(author_id: str, response_ids: list) -> pd.Series:
     )
 
 
-class TestBroadcastRootExclusion:
-    def test_brand_with_20_responses_is_broadcast(self):
+class TestBroadcastNodeExclusion:
+    def test_brand_with_exactly_15_responses_is_not_broadcast(self):
         row = _make_row(
             author_id="AppleSupport",
-            response_ids=[str(i) for i in range(20)],
+            response_ids=[str(i) for i in range(15)],
         )
-        assert is_broadcast_root(row) is True, (
+        assert is_broadcast_node(row) is False, (
             "A brand tweet with 20 response ids must be classified as broadcast."
         )
 
@@ -115,15 +115,7 @@ class TestBroadcastRootExclusion:
             author_id="AppleSupport",
             response_ids=["1", "2", "3"],
         )
-        assert is_broadcast_root(row) is False
-
-    def test_brand_with_exactly_15_responses_is_not_broadcast(self):
-        """Boundary: exactly 15 is NOT a broadcast (rule is strictly >15)."""
-        row = _make_row(
-            author_id="SpotifyCares",
-            response_ids=[str(i) for i in range(15)],
-        )
-        assert is_broadcast_root(row) is False
+        assert is_broadcast_node(row) is False
 
     def test_brand_with_16_responses_is_broadcast(self):
         """One over the threshold must trigger exclusion."""
@@ -131,25 +123,25 @@ class TestBroadcastRootExclusion:
             author_id="SpotifyCares",
             response_ids=[str(i) for i in range(16)],
         )
-        assert is_broadcast_root(row) is True
+        assert is_broadcast_node(row) is True
 
-    def test_numeric_author_id_is_never_broadcast(self):
+    def test_numeric_author_id_IS_broadcast_if_high_fanout(self):
         """
-        Customer accounts have numeric author_ids in TWCS.
-        Even if they somehow had 20 response_ids, they should NOT be excluded.
+        Broadcast exclusion applies per-node. Customer accounts with numeric
+        author_ids are excluded if they broadcast (>15 responses).
         """
         row = _make_row(
             author_id="1234567890",  # numeric → customer
             response_ids=[str(i) for i in range(20)],
         )
-        assert is_broadcast_root(row) is False
+        assert is_broadcast_node(row) is True
 
     def test_empty_response_list_is_not_broadcast(self):
         row = _make_row(
-            author_id="VerizonSupport",
+            author_id="AppleSupport",
             response_ids=[],
         )
-        assert is_broadcast_root(row) is False
+        assert is_broadcast_node(row) is False
 
 
 # ── 4. Sign-off stripping ─────────────────────────────────────────────────────

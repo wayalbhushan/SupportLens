@@ -135,6 +135,19 @@ Append new entries here as they arise — never reconstruct this file.
     artifact of golden-set frozen v1.2 vs. guide v1.3 Rule 4 (rhetorical hyperbole
     classified as none), rather than an operational model miss.
 
+23. Ground-Truth Auditing and Reporting Integrity for Legal / Regulatory Recall:
+    During the legal-item audit, we discovered our own golden-set annotation for GS-199
+    violated the guide's evidence rule (Section 4 Rule 2) by inferring that anonymized
+    Twitter handles were regulatory officials. Despite finding that operational legal
+    recall is realistically 50.0% (2/4, or 100% on strict affirmative filings), we
+    deliberately retain the frozen v1.2 metric of 33.3% (2/6) as the reported headline
+    in all summary tables. Changing the headline benchmark post-hoc would constitute
+    metric cherry-picking to flatter results. We reconcile the numbers transparently
+    via a four-tier breakdown in the report, affirming 50.0% (2/4) as closest to
+    operational truth (removing the annotator rule violation while retaining the
+    borderline statutory citation in GS-023).
+
+
 
 
 ## Known Issues Caught During Development

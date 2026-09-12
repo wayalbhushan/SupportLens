@@ -41,23 +41,33 @@ Path B was executed with zero gating or conditioning on 100% of messages.
 | `prolonged_outage` | 8 | 7 | **87.5%** | Individual reporting (>= 48 hours) |
 | `acute/rare` | 7 | 6 | **85.7%** | Grouped: physical_hazard (4), business_critical (2), medical (1) per Decision 21 |
 
-### 2.1 Deep-Dive: Legal / Regulatory Recall Audit (Frozen v1.2 vs. Operational v1.3)
+### 2.1 Deep-Dive: Legal / Regulatory Recall Audit & Ground-Truth Reconciliation
 
-On the surface, Path B's legal/regulatory recall appears low at **33.3% (2/6)** against the frozen v1.2 golden labels. A complete message-by-message audit of all 6 items reveals that this shortfall is almost entirely an artifact of labeling-regime evolution and annotator inference:
+In the main results table, we report the raw frozen v1.2 metric of **33.3% (2/6)**. We deliberately retain this as our headline figure—despite having the least confidence in its denominator—because it represents what the frozen golden set actually contains. Changing the headline benchmark post-hoc after seeing model outputs would constitute metric cherry-picking to flatter our performance, exactly the practice this evaluation is designed to prevent.
 
-| Sample ID | Tweet ID | Stratum | Customer Text Snippet | Golden Notes (v1.2) | Pred Sev | True Miss or Label Skew? |
+However, a comprehensive message-by-message audit of all 6 items reveals that this headline understates true operational capability, driven by labeling-version shifts and an annotator error:
+
+| Sample ID | Tweet ID | Stratum | Customer Text Snippet | Golden Notes (v1.2) | Pred Sev | Audit Classification |
 | :---: | :---: | :---: | :--- | :--- | :---: | :--- |
-| `GS-197` | `2614567` | B | `...@115722 I'm wondering who else was promised a $250 GC... #BBB #FTC #FILECOMPLAINTS` | Unfulfilled promo; filing with BBB/FTC | `legal_regulatory` | **True Positive (Detected)** |
-| `GS-200` | `201872` | B | `@VerizonSupport I have an open case and I'm on the verge of getting an attorney...` | Threatening retention of attorney | `legal_regulatory` | **True Positive (Detected)** |
-| `GS-185` | `1019621` | B | `@115722 i think a class action lawsuit is needed for claiming internet speeds...` | Threatening class action lawsuit | `none` | **Label-Version Skew (v1.3 Rule 4)**: Third-person rhetorical hyperbole without an affirmative filing is explicitly defined as `none` in v1.3. Path B correctly adhered to the guide. |
-| `GS-023` | `997639` | A | `.@115722 Could you have a customer rep contact me about this ad, False Advertising & the Rhode Island Deceptive Trade Practices Act...` | Threatening RI Deceptive Trade Practices Act | `none` | **Label-Version Skew (v1.3 Rule 4)**: Cites consumer protection statute to request a rep callback, but makes no affirmative declaration of regulatory filing or legal retention. |
-| `GS-199` | `1543877` | B | `@115722 day 8,29 hrs phone/ store. fraudcontracts, cover up district manager. @12165, and @9988 docs and recordings` | Alleging contract fraud, recordings sent to regulatory officials | `none` | **Annotator Inference Error**: The annotator assumed anonymized numeric handles `@12165` and `@9988` were regulatory officials, violating Section 4 Rule 2 (never infer). The text contains no named regulatory body or legal counsel. |
-| `GS-035` | `2588515` | A | `@VerizonSupport you are charging me for a phone that I paid for and sent me to collections!` | Sent to collections for paid phone equipment | `none` | **Collections Dispute, Not Legal Threat**: Being sent to a collections agency is an equipment billing dispute, not an affirmative legal action or regulatory filing against Verizon. (Escalated via Path A `billing_dispute` default). |
+| `GS-197` | `2614567` | B | `...@115722 I'm wondering who else was promised a $250 GC... #BBB #FTC #FILECOMPLAINTS` | Unfulfilled promo; filing with BBB/FTC | `legal_regulatory` | **True Positive (Caught)** |
+| `GS-200` | `201872` | B | `@VerizonSupport I have an open case and I'm on the verge of getting an attorney...` | Threatening retention of attorney | `legal_regulatory` | **True Positive (Caught)** |
+| `GS-185` | `1019621` | B | `@115722 i think a class action lawsuit is needed for claiming internet speeds...` | Threatening class action lawsuit | `none` | **Label-Version Skew (v1.3 Rule 4)**: Third-person rhetorical hyperbole without an affirmative personal filing is explicitly defined as `none` in v1.3. Path B correctly adhered to the guide. |
+| `GS-023` | `997639` | A | `.@115722 Could you have a customer rep contact me about this ad, False Advertising & the Rhode Island Deceptive Trade Practices Act...` | Threatening RI Deceptive Trade Practices Act | `none` | **Borderline Statutory Reference**: Cites a state statute to demand a callback rather than declaring a formal filing. Worth retaining in the denominator as an operational near-miss. |
+| `GS-199` | `1543877` | B | `@115722 day 8,29 hrs phone/ store. fraudcontracts, cover up district manager. @12165, and @9988 docs and recordings` | Alleging contract fraud, recordings sent to regulatory officials | `none` | **Annotator Evidence-Rule Violation**: Ground-truth error. The annotator inferred that anonymized numeric handles `@12165` and `@9988` were regulatory officials, violating Section 4 Rule 2 (*judge solely from explicit text; never infer*). |
+| `GS-035` | `2588515` | A | `@VerizonSupport you are charging me for a phone that I paid for and sent me to collections!` | Sent to collections for paid phone equipment | `none` | **Collections Dispute, Not Regulatory Threat**: Being sent to collections is an equipment billing issue, not an affirmative regulatory complaint against Verizon. (Escalated via Path A `billing_dispute` default). |
 
-**Adjusted Operational Legal Recall:**
-- **Strict Affirmative Filing Standard (v1.3):** The golden set contains exactly **2 genuine affirmative filings** (`GS-197`, `GS-200`). Path B detected **2 out of 2 (100.0%)**.
-- **Borderline Inclusion (`GS-023` included as affirmative threat):** Path B detected **2 out of 3 (66.7%)**.
-- **Frozen Benchmark Compliance:** We report the raw frozen v1.2 metric (**33.3%**) in all headline tables to maintain strict benchmark integrity without post-hoc cherry-picking.
+#### Structured Legal-Recall Reconciliation
+
+| Evaluation Standard | Retained Denominator Items | Calculation | Legal Recall | Rationale |
+| :--- | :--- | :---: | :---: | :--- |
+| **Headline Benchmark (Frozen v1.2)** | All 6 original labeled items | $2 / 6$ | **33.3%** | **Reported headline.** Preserves frozen benchmark integrity; prevents post-hoc flattery. |
+| **Adjusted for Label-Version Skew** | Excludes `GS-185` (v1.3 Rule 4 hyperbole) | $2 / 5$ | **40.0%** | Aligns evaluation with updated written guide standard. |
+| **Adjusted for Annotator Error** | Excludes `GS-185` and `GS-199` | $2 / 4$ | **50.0%** | **Most representative of operational reality.** Removes a verified annotator rule violation while keeping the borderline statutory citation (`GS-023`) in the denominator. |
+| **Strict Affirmative Filing Only** | `GS-197` and `GS-200` only | $2 / 2$ | **100.0%** | Strict legal counsel retention or affirmative agency filing (`#BBB`, `#FTC`). |
+
+> [!IMPORTANT]
+> **Annotator Self-Audit & Ground-Truth Review Discipline:**  
+> During the legal-item audit, we found our own golden-set annotation for `GS-199` violated the guide's evidence rule (Section 4 Rule 2) by inferring that anonymized Twitter user handles were regulatory officials. This finding demonstrates that manual labeling errors occur even under a formal written guide, and that auditing ground truth—not just model outputs—is essential to credible evaluation. We consider **50.0% (2/4)** to be the estimate closest to operational ground truth, as `GS-199` is an unambiguous labeling error, while `GS-023` represents a genuine real-world borderline case that an operational pipeline should reasonably be challenged on.
 
 ### 2.2 Path B Determinism & Precision Reconciliation
 

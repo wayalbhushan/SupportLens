@@ -418,3 +418,22 @@ class TestBaselinesAndLeakage:
         assert ESCALATION_DEFAULT_MAPPING["complaint_no_request"] is False
         assert ESCALATION_DEFAULT_MAPPING["praise_thanks"] is False
         assert ESCALATION_DEFAULT_MAPPING["other"] is False
+
+    def test_retrieval_index_zero_golden_leakage(self):
+        from pathlib import Path
+        import pandas as pd
+        from src.retrieval import build_or_load_corpus
+
+        golden_df = pd.read_csv(Path("data/golden/golden_labeled.csv"))
+        golden_tids = set(golden_df["tweet_id"].astype(str))
+
+        corpus_df = build_or_load_corpus()
+        assert len(corpus_df) > 0, "Corpus must not be empty"
+
+        cust_tids = set(corpus_df["customer_tweet_id"].astype(str))
+        brand_tids = set(corpus_df["brand_tweet_id"].astype(str))
+        all_corpus_tids = cust_tids.union(brand_tids)
+
+        overlap = all_corpus_tids.intersection(golden_tids)
+        assert len(overlap) == 0, f"RETRIEVAL LEAKAGE: {len(overlap)} golden IDs found in retrieval index!"
+

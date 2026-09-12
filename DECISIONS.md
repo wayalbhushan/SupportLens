@@ -163,6 +163,27 @@ Append new entries here as they arise — never reconstruct this file.
     The 60-item calibration sample is drawn strictly from Phase 4 Agent output stratified
     on these quality proxies (seed=42).
 
+25. Human Blind Calibration Protocol and 88% Weak Retrieval Evidence Finding:
+    Prior to running the LLM-as-judge scoring pipeline (`src/judge.py`), human blind scoring
+    was conducted across all 60 calibration items on Groundedness, Actionability, and Brand
+    Appropriateness (180 distinct scores and justifications). Key methodological points and findings:
+    - **Weak Retrieval Evidence Reality (88% below 0.50)**: Across the full 176 valid agent outputs,
+      only 21 items total had retrieval similarity >= 0.50. 155 of 176 (88%) sat below this threshold.
+      Thus, the agent's non-other replies primarily rely on the LLM's prompted policy constraints
+      rather than close historical precedent. A judge evaluating "groundedness" against mostly weak
+      evidence is measuring policy-consistency rather than close historical grounding.
+    - **Calibration Harness vs. Headline Agent Evaluation**: The 60-item calibration set was
+      deliberately engineered to be harder than the natural distribution (55% failure modes: wrong-intent
+      matches or low similarity) to test whether the judge can discriminate good from bad replies.
+      Consequently, calibration scores and kappa agreement statistics reflect judge sensitivity on a
+      stress test, and are strictly separated from Part D's headline reply-quality evaluation.
+    - **Blind Protocol and Integrity Freeze**: Human scoring was executed blind to retrieval similarity,
+      golden vs. predicted intent comparison, and stratum labels. Each score was assigned using the exact
+      rubric anchors (`rubric/judge_rubric.md`) accompanied by a specific one-line justification.
+      The pass was completed in a single sitting (~45 minutes) and committed to version control
+      (`data/golden/human_calibration_scores.csv`) before any call to `src/judge.py` or population
+      of `data/cache/judge_cache.json`.
+
 
 
 

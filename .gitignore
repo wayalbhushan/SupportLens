@@ -1,5 +1,7 @@
 # Raw dataset — large and not ours to redistribute
 data/raw/*.csv
+data/processed/tweets_clean.parquet
+*.bak
 
 # Python
 __pycache__/

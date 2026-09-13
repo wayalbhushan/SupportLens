@@ -36,6 +36,12 @@ Analysis of the frozen golden evaluation set (Stratum A, $n=120$) reveals that a
 
 This reframes the entire task: an inbound support agent does not need to troubleshoot or escalate all of its traffic. It must provide empathetic de-escalation for venting, acknowledge praise, and cleanly filter out-of-scope chatter without congesting human support queues.
 
+### 1.4 Golden Evaluation Set: Sampling Strategy & Labeling Consistency
+To evaluate both natural conversational volume and safety-critical edge cases, the 200-item golden evaluation set (`golden_labeled.csv`) was constructed via a two-stratum sampling protocol:
+* **Stratum A (Natural Distribution, $n=120$):** Drawn via unbiased random sampling from the 7,626 in-scope VerizonSupport threads. Reflects real-world intent prevalence: `connectivity_issue` (28.3%, 34/120), `tv_content_access` (18.3%, 22/120), `complaint_no_request` (15.8%, 19/120), `other` (11.7%, 14/120), `billing_dispute` (10.8%, 13/120), `praise_thanks` (7.5%, 9/120), `account_access` (6.7%, 8/120), and `appointment_installation` (0.8%, 1/120). Natural human escalation demand is 22.5% (27/120). All headline benchmarks are evaluated on Stratum A.
+* **Stratum B (Targeted Oversample, $n=80$):** Purposefully enriched with rare operational intents (`appointment_installation` $n=18$, `account_access` $n=15$, `billing_dispute` $n=15$) and acute safety/legal severity overrides (`physical_hazard` $n=4$, `medical` $n=1$, `business_critical` $n=2$, `prolonged_outage` $n=8$, `legal_regulatory` $n=6$) to ensure statistically meaningful per-class signal.
+* **Labeling Consistency:** All items were hand-annotated in a single session under frozen `LABELING_GUIDE.md` v1.2. Annotator reliability was verified via an independent blind relabel of 40 shuffled, unlabelled items (`relabel_blind_sample.csv`) after a 24-hour delay, yielding **$\kappa = 0.705$ for intent** (75.0% raw match, 30/40) and **$\kappa = 0.747$ for escalation** (87.5% raw match, 35/40), demonstrating substantial inter-temporal agreement under Landis & Koch (1977) criteria.
+
 ---
 
 ## 2. Results vs. Two Baselines
@@ -170,43 +176,47 @@ If granted an additional week of development and evaluation, work would focus on
 
 ---
 
-## 6. Decision Log
+## 6. Summary of Architectural & Methodology Decisions
 
-The following 27 architectural, procedural, and methodological decisions were logged chronologically during project execution and preserved in substance:
+The table below summarizes the 27 chronological decisions recorded throughout development. Detailed rationale, empirical justifications, and change histories are preserved in [DECISIONS.md](DECISIONS.md).
 
-### Architectural & Scope Decisions
-* **Decision 1: Golden Set Exclusion from Retrieval and Few-Shot Prompts.** To guarantee zero data contamination and unbiased evaluation, all golden set items are strictly excluded from the retrieval corpus and prompt templates.
-* **Decision 2: Brand Selection by Reply-Substance Ratio.** VerizonSupport was chosen based on empirical reply-substance ratio (frequency of public diagnostic troubleshooting vs. immediate DM deflection), not gross corpus size.
-* **Decision 3: No Model Fine-Tuning.** Bounded by 16GB RAM and no local GPU, retrieval-augmented prompting was adopted over fine-tuning, preventing conversational drift and stale package hallucination.
-* **Decision 4: Single-Turn Scope Restriction.** Bounded strictly to one inbound tweet to one routing/drafting response. Multi-turn dialogue state tracking was declared out of scope.
-* **Decision 5: Non-English Message Filtering.** Non-English messages were filtered upstream; the drop fraction was recorded as an explicit system limitation.
-* **Decision 6: Off-the-Shelf Vector Retrieval.** Scikit-learn nearest-neighbors and TF-IDF were deployed rather than a custom vector index to allocate maximum engineering time to evaluation infrastructure.
-* **Decision 7: Disjoint LLM Judge Family.** The LLM judge used a different model family (`qwen/qwen3.8-27b` via Groq) from the agent generator (`gemini-3.5-flash-lite`) to eliminate self-preference evaluation bias.
-* **Decision 8: Bit-for-Bit Deterministic Caching.** All LLM calls are hashed by prompt and cached to disk (`data/cache/`), enabling reproduction of headline benchmarks in minutes without live API rate limits.
-* **Decision 13: FiOS / Home Wireline Scope Restriction.** Cellular/wireless intents were filtered upstream (dropping 397 candidate tweets / 4.78% of corpus) due to a 5:1 product imbalance that would have rendered wireless statistically unmeasurable in an $N=200$ test set.
-* **Decision 14: Re-rooting Corporate Broadcast Trees.** Out of 268 threads rooted at an anonymized brand handle, 240 (89.6%) contained legitimate downstream customer interactions. Re-rooting preserved these conversations while stripping top-level marketing copy.
-* **Decision 20: Decoupled Dual-Path Architecture for Severity Escalation.** Baseline 2 revealed that folding severity overrides into intent classification caused total suppression of legal filings. Phase 4 implemented independent dual paths: Path A predicts intent; Path B extracts severity across 100% of messages without gating. Escalation is a strict boolean OR.
+| Decision | Area / Topic | Core Decision & Operational Rationale | Primary File / Metric |
+| :--- | :--- | :--- | :--- |
+| **D1, D6** | Data Leakage & Search | Golden items strictly excluded from retrieval index; TF-IDF nearest-neighbor retrieval. | `src/retrieval.py` (Assert overlap = 0) |
+| **D2, D13** | Scope & Brand | VerizonSupport selected via reply-substance ratio; wireless filtered (5:1 imbalance, 4.78% drop). | `LABELING_GUIDE.md` (FiOS wireline) |
+| **D3, D4, D5** | System Bounds | Prompt RAG over fine-tuning; single-turn scope; upstream non-English message filtering. | `REPORT.md` Section 1.2 |
+| **D7, D8** | Models & Caching | Disjoint judge (`qwen/qwen3.8-27b`) vs generator (`gemini-3.5-flash-lite`); deterministic prompt hashing. | `data/cache/llm_cache.json` |
+| **D9, D17** | Dataset Design | 200 items: Stratum A (120 natural random, headline) + Stratum B (80 rare intent/severity oversamples). | `data/golden/golden_labeled.csv` |
+| **D10, D16** | Guide Governance | Written guide versioned before labeling; frozen at v1.2 across all 200 items in single session. | `LABELING_GUIDE.md` v1.2 |
+| **D11, D12** | Reliability Protocol | Intra-annotator 40-item blind relabel ($\kappa=0.705$/$0.747$); quadratic weighted judge kappa ($\kappa_w$). | `data/golden/relabel_blind_sample.csv` |
+| **D14** | Thread Topology | Re-rooted 240 corporate broadcast trees to preserve legitimate downstream customer discussions. | `src/thread_check.py` |
+| **D15, D20** | Dual-Path Routing | Independent Path B zero-gated severity extractor OR-gated with Path A default intent policy. | `src/agent_orchestrator.py` |
+| **D18, D21** | Small-Sample Policy | Explicit flagging for $n<5$ classes; grouped acute emergency triggers ($n=7$, 85.7% recall). | `REPORT.md` Section 4 |
+| **D19, D22** | Prompt Iteration | Guide v1.3 Rule 3b for billing withholding; bounded prompt rules preventing complaint sinks. | `src/agent_path_a.py` |
+| **D23** | Ground-Truth Audit | Audited GS-199 rater error; retained 33.3% headline legal recall to prevent metric cherry-picking. | `REPORT.md` Section 3 (Failure 2) |
+| **D24, D25** | Calibration Design | 60-item quality-stratified calibration sample; blind scoring uncovered 88% low-similarity retrieval. | `data/golden/judge_calibration_sample.csv` |
+| **D26, D27** | Rubric & Rotation | Revision 1 Groundedness disambiguation (+0.106 $\kappa$); 5-key Groq rotation pool across 176 items. | `src/run_full_judge_eval.py` |
 
-### Evaluation & Annotation Protocol Decisions
-* **Decision 9: Two-Stratum Golden Set Sampling.** The 200-item golden set comprises Stratum A (120 pure random items for unbiased headline metrics) and Stratum B (80 targeted oversamples across rare intents and severity triggers for per-class signal).
-* **Decision 10: Versioned Written Labeling Guide.** `LABELING_GUIDE.md` was authored and versioned prior to annotation; all amendments required formal version bumping and change logs.
-* **Decision 11: Annotation Consistency via Intra-Annotator Relabeling.** Measured via Cohen's kappa on a blind relabel sample of 20 items after a 24-hour delay.
-* **Decision 12: Judge-Human Agreement via Weighted Cohen's Kappa.** Rubric dimensions are evaluated using quadratically weighted Cohen's kappa ($\kappa_w$), with linear kappa, unweighted kappa, and Pearson $r$ reported alongside.
-* **Decision 15: Non-Negotiable Severity Overrides.** Regardless of primary intent (even `complaint_no_request`), the agent must escalate medical dependencies (LifeAlert), hazardous infrastructure (downed live wires), prolonged outages ($\ge 48$h), or legal/regulatory filings.
-* **Decision 16: Guide Frozen at v1.2.** All 200 golden set items were annotated under v1.2 in a single 3h 45m session. Post-hoc adjustments are prohibited from modifying frozen dataset rows.
-* **Decision 17: Golden Evaluation Set Size ($N=200$).** Exactly 120 Stratum A items (22.5% natural escalation) and 80 Stratum B items (67.5% escalation) curated and frozen.
-* **Decision 18: Sample Size Flagging ($n<5$).** Any intent class with $n<5$ in Stratum A (e.g., `appointment_installation`, $n=1$) is flagged as unreliable for natural estimates; blended metrics are reported with mandatory oversampling disclosures.
-* **Decision 19: Affirmative Billing Actions Override Technical Defects (Guide v1.3 Rule 3b).** Blind relabeling surfaced item `706604` (*"not paying my bill until you fix internet"*). Codified in v1.3 that affirmative financial withholding routes to `billing_dispute` due to billing ledger access requirements. Frozen v1.2 dataset labels remained unaltered.
-* **Decision 21: Grouping Acute/Rare Severity Classes.** Emergency categories with very low natural support (`physical_hazard` $n=4$, `business_critical` $n=2$, `medical` $n=1$) are grouped in reporting ($n=7$, recall 85.7%) to prevent uninformative single-item zero-division variance.
-* **Decision 22: Bounded Prompt Iteration for Path A Escalation Sinks.** Added a single bounded system prompt rule prioritizing operational intents over `complaint_no_request` whenever factual defects are stated. Identified `GS-185` as an artifact of v1.2 vs. v1.3 hyperbole rules rather than an operational miss.
-* **Decision 23: Ground-Truth Auditing and Reporting Integrity for Legal Recall.** Audit revealed annotator error on `GS-199` (inferring numeric user handles were regulators). Retained frozen v1.2 headline recall of **33.3% (2/6)** to prevent cherry-picking, while documenting reconciled operational recall at **50.0% (2/4)**.
-* **Decision 24: Calibration Sampling from Quality-Stratified Agent Output.** Replaced theoretical cross-system calibration sampling with quality-stratified Phase 4 Agent output (60 items across retrieval similarity bands, intent correctness, and escalation status), avoiding invalid canned macro scoring.
-* **Decision 25: Blind Calibration Protocol and 88% Weak Evidence Finding.** Human scoring (180 evaluations across 60 items) was executed blind to retrieval similarity and predicted intents. Revealed that 88% of agent replies have retrieval similarity $<0.50$, proving agent groundedness measures policy compliance rather than historical snippet copying.
-* **Decision 26: Rubric Revision 1 Disambiguation and Negative Lexical Cutoff.** Corrected human rater oversight on `Tweet 399679` (+0.044 kappa gain). Disambiguated Groundedness Score 4 to require checkable facts (+0.106 kappa gain, reaching $\kappa_w = 0.252$). Documented the negative lexical cutoff effect on Brand Appropriateness ($\kappa_w = 0.273$), where the LLM judge strictly penalized verbosity as a step function.
-* **Decision 27: Full Golden-Set Evaluation and Key Rotation Pool ($N=176$).** Evaluated all 176 valid non-other agent items using Groq `qwen/qwen3.8-27b`. Implemented a 5-key round-robin rotation pool to handle daily token limits deterministically.
+---
 
-### Known Engineering Issues Caught During Development
-1. **Sign-off Regex Failure:** Initial regex `r'[\^\-]\w+$'` failed on multi-word agent sign-offs (e.g., `"- Lee 2/2"` and `"Thanks - Mike"`). Fixed with robust spacing, name length, and page marker handling.
-2. **Thread Root/Leaf Inversion:** Initial BFS logic inverted parent-child relationships, picking leaf nodes (tweets with no replies) instead of thread roots, collapsing average thread length to 1.00. Caught by metric assertions, inverted, and protected with regression tests.
-3. **Per-Node Broadcast Exclusion:** Broadcast pruning rule was originally applied only to root brand nodes. Mid-conversation high-fanout nodes bypassed the rule, producing threads up to 974 tweets. Updated to prune any node with $>15$ replies, bounding max contiguous thread length to 650 tweets.
-4. **Marketing Tweet Contamination via Anonymized Brand Roots:** In TWCS, corporate handles (`@Verizon`, `@VerizonWireless`) were anonymized as numeric user IDs and tagged `inbound=True`. Promotional marketing tweets entered thread reconstruction as customer roots. Fixed by identifying anonymized corporate accounts and enforcing customer-authored thread roots, eliminating 100% of corporate ad contamination from the reading sample.
+## 7. References & AI Assistant Attribution
+
+### References & Citations
+1. **Primary Dataset:** Customer Support on Twitter (TWCS), thoughtvector, Kaggle (2017). Reconstructed 7,626 threads scoped to VerizonSupport wireline/FiOS customer care.
+2. **Generative Model:** Google DeepMind `gemini-3.5-flash-lite` (Path A intent classifier, Path B severity extractor, and grounded response generator).
+3. **Judge Model:** Alibaba Cloud / Qwen team `qwen/qwen3.8-27b` via Groq API (disjoint model family for LLM-as-a-judge evaluation).
+4. **LLM-as-a-Judge Methodology:** Zheng, L., Chiang, W. L., Sheng, Y., et al. (2023). *Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena*. Advances in Neural Information Processing Systems (NeurIPS 2023).
+5. **Inter-Rater Reliability:** Cohen, J. (1960). *A coefficient of agreement for nominal scales*. Educational and Psychological Measurement, 20(1), 37–46.
+6. **Agreement Interpretation Standards:** Landis, J. R., & Koch, G. G. (1977). *The measurement of observer agreement for categorical data*. Biometrics, 33(1), 159–174.
+7. **Core Software Libraries:** Scikit-learn (Pedregosa et al., 2011), SciPy (Virtanen et al., 2020), Pandas, PyArrow, FastAPI, Uvicorn.
+
+### AI Assistant Attribution & Engineering Review
+In accordance with the Hiver take-home guidelines (*"Cite anything you borrowed... we will ask you to explain and modify your own code live"*), **Antigravity (Google DeepMind agentic AI coding assistant)** was used throughout the project for boilerplate generation, scaffolding, regex drafting, and test harness execution. All taxonomy definitions, labeling judgments, operational boundaries, and evaluation designs were directed and reviewed by the author.
+
+During development, manual code audits and unit test assertions caught **six critical engineering issues** introduced during AI-assisted implementation:
+1. **Sign-off Regex Failure:** The assistant's initial regex `r'[\^\-]\w+$'` truncated multi-word agent sign-offs (e.g. `"- Lee 2/2"` or `"Thanks - Mike"`). Caught and rewritten with whitespace and page-marker tolerance in `src/clean.py`.
+2. **Thread Root/Leaf Inversion:** The assistant inverted parent-child relationships in the BFS thread reconstructor, picking reply leaf nodes instead of conversation roots and collapsing average thread length to 1.00. Caught via metric assertions, inverted, and covered by `TestThreadRootLogic`.
+3. **Per-Node Broadcast Exclusion:** Broadcast pruning was initially applied only to root brand nodes; high-fanout marketing nodes appearing mid-thread bypassed the check, generating 900+ tweet runaway threads. Resolved by enforcing per-node degree bounds ($>15$ replies).
+4. **Marketing Tweet Contamination via Anonymized Brand Roots:** In TWCS, corporate handles (`@Verizon`, `@VerizonWireless`) were anonymized as numeric user IDs and tagged `inbound=True`, allowing marketing tweets to enter as customer roots. Caught in reading sample and eliminated by enforcing customer-authored thread roots.
+5. **Path B Model-Drift and Cache-Key Mismatch:** During prompt iteration on Path B, unpinned model tags and system prompt variations caused non-deterministic cache lookups; resolved by pinning `gemini-3.5-flash-lite`, enforcing `temperature=0.0`, and standardizing SHA256 prompt hashing in `src/llm_client.py`.
+6. **Fabricated Confidence Display:** A visual mock-up placeholder for model confidence (`0.88` / `0.90`) was placed in the demo frontend without underlying pipeline support; caught during pre-submission audit and completely removed from all schemas, templates, and UI components to preserve strict empirical truth.

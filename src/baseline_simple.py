@@ -172,8 +172,9 @@ def run_simple_baseline():
         print(f"  {intent:<25}: {cnt:>5} ({pct:>5.1f}%){warn}")
 
     # 3. Train/Val Split (80/20 stratified)
-    X = weak_df["text_clean"].fillna("").astype(str).values
-    y = weak_df["weak_intent"].values
+    import numpy as np
+    X = np.array(weak_df["text_clean"].fillna("").astype(str).tolist(), dtype=object)
+    y = np.array(weak_df["weak_intent"].tolist(), dtype=object)
 
     X_train, X_val, y_train, y_val = train_test_split(
         X, y, test_size=0.20, random_state=42, stratify=y

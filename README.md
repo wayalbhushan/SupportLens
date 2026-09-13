@@ -12,7 +12,7 @@ AI customer support inbound routing and grounded response agent, built evaluatio
 
 | Phase | Focus | Status & Key Artifacts |
 | :--- | :--- | :--- |
-| **Phase 0** | Data Ingest & Cleaning | **Complete** — Cleaned TWCS corpus, reconstructed 650-tweet threads, filtered corporate broadcasts, selected VerizonSupport based on measured public reply-substance ratio. |
+| **Phase 0** | Data Ingest & Cleaning | **Complete** — Cleaned TWCS corpus, reconstructed 7,626 customer threads (up to 650 tweets), filtered corporate broadcasts, selected VerizonSupport based on measured public reply-substance ratio. |
 | **Phase 1** | Intent Taxonomy & Labeling Guide | **Complete** — Derived 8-class empirical taxonomy from real reading sample; authored and versioned `LABELING_GUIDE.md` (frozen at v1.2, boundary rule 3b added in v1.3). |
 | **Phase 2** | Golden Evaluation Set | **Complete** — Curated 200 hand-labeled items across Stratum A (120 natural random) and Stratum B (80 targeted oversamples of rare intents/overrides) in `data/golden/golden_labeled.csv`. |
 | **Phase 3** | Baselines & Leakage Protection | **Complete** — Evaluated Trivial Keyword Floor vs. Weakly Supervised TF-IDF+Logistic Regression; documented weak-supervision ceiling (47.5% test vs 75% val) in `data/processed/baseline_results.md`. |
@@ -20,6 +20,7 @@ AI customer support inbound routing and grounded response agent, built evaluatio
 | **Phase 5** | LLM-as-Judge Calibration & Full Eval | **Complete** — Calibrated Groq Qwen-2.5-32B judge against blind human ratings ($\kappa_w=0.637$ Actionability, $0.252$ Groundedness, $0.273$ Brand). Evaluated all 176 non-other golden items in `data/processed/agent_full_judge_eval.csv`. |
 | **Phase 6** | Synthesis & Technical Report | **Complete** — Comprehensive evaluation report authored in `REPORT.md`, tracking top 5 failure modes, cost-asymmetry analysis, what's misleading about headline numbers, and full 27 decisions in `DECISIONS.md`. |
 | **Phase 7** | Reproducibility Verification | **Complete** — Verified cold reproduction in clean checkout under 2 minutes with 100% cache hit determinism and zero API key requirements. |
+| **Phase 8** | Interactive Demo UI | **Complete** — Responsive single-page application (FastAPI + Vanilla JS) featuring zero-key cached golden replay and live decoupled pipeline inference. |
 
 ---
 
@@ -78,6 +79,17 @@ python -m src.run_full_judge_eval
 ```
 
 **Expected Runtime:** ~30 to 45 seconds total wall-clock time across all three scripts.
+
+### 4. Launch Interactive Demo UI (Phase 8)
+
+SupportLens includes a responsive single-page application featuring an interactive pipeline visualization and results explorer:
+
+```bash
+uvicorn app.main:app --port 8000
+```
+Open **[http://localhost:8000](http://localhost:8000)** in your browser.
+* **Live Demo Tab:** Test inbound customer messages. Pre-selected chips replay committed golden-set items with zero API keys. Live inference through the dual-path orchestrator is available when `GEMINI_API_KEY` is configured in `.env`.
+* **Results Dashboard Tab:** Explore headline benchmark cards, agreement kappa charts, and a filterable dataset browser across all 200 golden-set predictions.
 
 ---
 

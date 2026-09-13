@@ -88,8 +88,9 @@ def generate_report():
     from sklearn.linear_model import LogisticRegression
     from sklearn.model_selection import train_test_split
 
-    X = weak_df["text_clean"].fillna("").astype(str).values
-    y = weak_df["weak_intent"].values
+    import numpy as np
+    X = np.array(weak_df["text_clean"].fillna("").astype(str).tolist(), dtype=object)
+    y = np.array(weak_df["weak_intent"].tolist(), dtype=object)
 
     X_train, X_val, y_train, y_val = train_test_split(
         X, y, test_size=0.20, random_state=42, stratify=y

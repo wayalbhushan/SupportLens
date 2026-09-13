@@ -154,7 +154,6 @@ def get_examples():
                     "tweet_id": item["tweet_id"],
                     "stratum": item["stratum"],
                     "intent": item["pred_intent"],
-                    "confidence": 0.88,
                     "reasoning": item["path_a_reasoning"],
                     "severity": item["pred_severity"],
                     "severity_reason": "Matched keyword/condition" if item["pred_severity"] != "none" else "No acute condition detected",
@@ -322,7 +321,6 @@ def classify_message(req: ClassifyRequest):
                 "input_text": item["text_clean"],
                 "path_a": {
                     "intent": item["pred_intent"],
-                    "confidence": 0.88,
                     "reasoning": item["path_a_reasoning"],
                 },
                 "path_b": {
@@ -362,7 +360,6 @@ def classify_message(req: ClassifyRequest):
                 "input_text": matched_item["text_clean"],
                 "path_a": {
                     "intent": matched_item["pred_intent"],
-                    "confidence": 0.88,
                     "reasoning": matched_item["path_a_reasoning"],
                 },
                 "path_b": {
@@ -409,7 +406,6 @@ def classify_message(req: ClassifyRequest):
             "input_text": text,
             "path_a": {
                 "intent": result["intent"],
-                "confidence": result.get("confidence", 0.90),
                 "reasoning": result.get("reasoning", "Path A reasoning"),
             },
             "path_b": {

@@ -51,7 +51,6 @@
   const stageBadgeA = document.getElementById("stage-badge-a");
   const stageBadgeB = document.getElementById("stage-badge-b");
   const pathAIntent = document.getElementById("path-a-intent");
-  const pathAConf = document.getElementById("path-a-conf");
   const pathAReason = document.getElementById("path-a-reason");
   const pathBSeverity = document.getElementById("path-b-severity");
   const pathBReason = document.getElementById("path-b-reason");
@@ -295,7 +294,6 @@
 
     // 3. Path A Content
     pathAIntent.textContent = data.path_a.intent || "other";
-    pathAConf.textContent = `${Math.round((data.path_a.confidence || 0.9) * 100)}%`;
     pathAReason.textContent = data.path_a.reasoning || "Predicted via zero-shot intent classifier.";
 
     // 4. Path B Content

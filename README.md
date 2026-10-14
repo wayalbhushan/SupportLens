@@ -1,7 +1,6 @@
 # SupportLens
 
 AI customer support inbound routing and grounded response agent, built evaluation-first.  
-**Take-home assignment for Hiver SDE Intern role.**  
 **GitHub Repository:** [https://github.com/wayalbhushan/SupportLens](https://github.com/wayalbhushan/SupportLens)  
 
 > *"Whether you can turn a messy real-world dataset into a working AI system and prove it works. The proof is worth more than the system."*
